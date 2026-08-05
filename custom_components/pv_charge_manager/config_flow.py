@@ -24,6 +24,15 @@ from .const import (
     CONF_PV_POWER_SENSORS,
     CONF_RESERVE_POWER_W,
     CONF_VOLTAGE_V,
+    CONF_WALLBOX_CHARGING_POWER_SENSOR,
+    CONF_WALLBOX_CHARGING_SWITCH,
+    CONF_WALLBOX_CONNECTED_SENSOR,
+    CONF_WALLBOX_CONTROL_ENABLED,
+    CONF_WALLBOX_CURRENT_NUMBER,
+    CONF_WALLBOX_MANUAL_OVERRIDE_SENSOR,
+    CONF_WALLBOX_MIN_RUNTIME_S,
+    CONF_WALLBOX_START_DELAY_S,
+    CONF_WALLBOX_STOP_DELAY_S,
     DEFAULT_FEED_IN_TARIFF_EUR_PER_KWH,
     DEFAULT_MAX_CURRENT_A,
     DEFAULT_MIN_CURRENT_A,
@@ -31,6 +40,9 @@ from .const import (
     DEFAULT_PHASES,
     DEFAULT_RESERVE_POWER_W,
     DEFAULT_VOLTAGE_V,
+    DEFAULT_WALLBOX_MIN_RUNTIME_S,
+    DEFAULT_WALLBOX_START_DELAY_S,
+    DEFAULT_WALLBOX_STOP_DELAY_S,
     DOMAIN,
 )
 
@@ -150,6 +162,42 @@ def _options_schema(options: dict[str, Any]) -> vol.Schema:
                 CONF_PHASES,
                 default=options.get(CONF_PHASES, DEFAULT_PHASES),
             ): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=3, step=2)),
+            vol.Required(
+                CONF_WALLBOX_CONTROL_ENABLED,
+                default=options.get(CONF_WALLBOX_CONTROL_ENABLED, False),
+            ): selector.BooleanSelector(),
+            vol.Optional(
+                CONF_WALLBOX_CHARGING_SWITCH,
+                default=options.get(CONF_WALLBOX_CHARGING_SWITCH),
+            ): _switch_selector(),
+            vol.Optional(
+                CONF_WALLBOX_CURRENT_NUMBER,
+                default=options.get(CONF_WALLBOX_CURRENT_NUMBER),
+            ): _number_entity_selector(),
+            vol.Optional(
+                CONF_WALLBOX_CONNECTED_SENSOR,
+                default=options.get(CONF_WALLBOX_CONNECTED_SENSOR),
+            ): _binary_sensor_selector(),
+            vol.Optional(
+                CONF_WALLBOX_CHARGING_POWER_SENSOR,
+                default=options.get(CONF_WALLBOX_CHARGING_POWER_SENSOR),
+            ): _sensor_selector(),
+            vol.Optional(
+                CONF_WALLBOX_MANUAL_OVERRIDE_SENSOR,
+                default=options.get(CONF_WALLBOX_MANUAL_OVERRIDE_SENSOR),
+            ): _binary_sensor_selector(),
+            vol.Required(
+                CONF_WALLBOX_START_DELAY_S,
+                default=options.get(CONF_WALLBOX_START_DELAY_S, DEFAULT_WALLBOX_START_DELAY_S),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=3600, step=10)),
+            vol.Required(
+                CONF_WALLBOX_STOP_DELAY_S,
+                default=options.get(CONF_WALLBOX_STOP_DELAY_S, DEFAULT_WALLBOX_STOP_DELAY_S),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=3600, step=10)),
+            vol.Required(
+                CONF_WALLBOX_MIN_RUNTIME_S,
+                default=options.get(CONF_WALLBOX_MIN_RUNTIME_S, DEFAULT_WALLBOX_MIN_RUNTIME_S),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=86_400, step=60)),
         }
     )
 
@@ -157,6 +205,21 @@ def _options_schema(options: dict[str, Any]) -> vol.Schema:
 def _sensor_selector() -> selector.EntitySelector:
     """Return a selector for one numeric Home Assistant sensor."""
     return selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor"))
+
+
+def _switch_selector() -> selector.EntitySelector:
+    """Return a selector for the wallbox charging switch."""
+    return selector.EntitySelector(selector.EntitySelectorConfig(domain="switch"))
+
+
+def _number_entity_selector() -> selector.EntitySelector:
+    """Return a selector for the wallbox current number entity."""
+    return selector.EntitySelector(selector.EntitySelectorConfig(domain="number"))
+
+
+def _binary_sensor_selector() -> selector.EntitySelector:
+    """Return a selector for a wallbox binary sensor."""
+    return selector.EntitySelector(selector.EntitySelectorConfig(domain="binary_sensor"))
 
 
 def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
@@ -174,6 +237,11 @@ def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
         CONF_GRID_EXPORT_SENSOR,
         CONF_BATTERY_CHARGE_POWER_SENSOR,
         CONF_BATTERY_SOC_SENSOR,
+        CONF_WALLBOX_CHARGING_SWITCH,
+        CONF_WALLBOX_CURRENT_NUMBER,
+        CONF_WALLBOX_CONNECTED_SENSOR,
+        CONF_WALLBOX_CHARGING_POWER_SENSOR,
+        CONF_WALLBOX_MANUAL_OVERRIDE_SENSOR,
     ):
         if not normalized.get(key):
             normalized[key] = None
@@ -187,4 +255,13 @@ def _validate_options(options: dict[str, Any]) -> dict[str, str]:
         return {"base": "max_current_below_minimum"}
     if options[CONF_PHASES] not in {1, 3}:
         return {"base": "invalid_phases"}
+    if options.get(CONF_WALLBOX_CONTROL_ENABLED) and any(
+        not options.get(key)
+        for key in (
+            CONF_WALLBOX_CHARGING_SWITCH,
+            CONF_WALLBOX_CURRENT_NUMBER,
+            CONF_WALLBOX_CONNECTED_SENSOR,
+        )
+    ):
+        return {"base": "wallbox_control_requires_entities"}
     return {}

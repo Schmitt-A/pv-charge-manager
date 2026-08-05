@@ -5,7 +5,7 @@ recalculate:
 
 start_boost:
   name: Start boost charging
-  description: Start a future boost charging mode after safety checks are implemented.
+  description: Reserved for a future manually requested boost mode; automatic wallbox control is handled by the configured safety controller.
   fields:
     duration_minutes:
       name: Duration

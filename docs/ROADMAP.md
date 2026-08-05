@@ -23,6 +23,7 @@ Goal: controlled PV surplus charging with conservative hardware safety rules.
 - current setpoint control
 - minimum runtime
 - stop delay
+- start delay and stable-surplus debounce
 - cloud smoothing filter
 - fallback behavior for unavailable sensors
 - manual override handling

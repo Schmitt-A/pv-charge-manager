@@ -42,6 +42,10 @@ SENSOR_DESCRIPTIONS = (
         native_unit_of_measurement="EUR/h",
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    SensorEntityDescription(
+        key="wallbox_action",
+        translation_key="wallbox_action",
+    ),
 )
 
 
@@ -71,7 +75,7 @@ class PVChargeManagerSensor(CoordinatorEntity[PVChargeManagerCoordinator], Senso
         }
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | str | None:
         """Return the latest calculated value."""
         if not self.coordinator.data:
             return None
@@ -80,6 +84,8 @@ class PVChargeManagerSensor(CoordinatorEntity[PVChargeManagerCoordinator], Senso
     @property
     def available(self) -> bool:
         """Only publish recommendations when all required inputs are valid."""
+        if self.entity_description.key == "wallbox_action":
+            return bool(self.coordinator.last_update_success and self.coordinator.data)
         return bool(
             self.coordinator.last_update_success
             and self.coordinator.data

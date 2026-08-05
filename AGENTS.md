@@ -50,6 +50,9 @@ python -m pip install -e ".[dev,ha]"
 - Treat learned forecast correction as core planning behavior: charge planning
   should use calibrated forecast values once enough forecast-vs-actual history
   exists.
+- Treat wallbox control as opt-in hardware control. Keep `wallbox.py` pure and
+  testable, apply current limits before service calls, and stop or hold safely
+  when required states are unavailable.
 - Treat `manifest.json` and translations as user-facing release metadata.
 - Keep README content aligned with the current implementation status. Do not claim
   production-ready charging control before wallbox safety logic is implemented.

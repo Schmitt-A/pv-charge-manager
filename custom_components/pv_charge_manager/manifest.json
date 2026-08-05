@@ -10,5 +10,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/Schmitt-A/pv-charge-manager/issues",
   "requirements": [],
-  "version": "0.1.0-dev"
+  "version": "0.2.0-dev"
 }

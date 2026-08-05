@@ -38,6 +38,11 @@ The Home Assistant OS app installer lives in
 structure and shell script, while the actual integration behavior remains in
 `custom_components/pv_charge_manager/`.
 
+Wallbox control logic is kept in `wallbox.py` without Home Assistant imports so
+that limits, debounce, minimum runtime, and fallback behavior can be tested
+without real hardware. The optional coordinator runtime test is skipped when
+Home Assistant dependencies are not installed.
+
 ## Coding conventions
 
 - Use explicit units in names.

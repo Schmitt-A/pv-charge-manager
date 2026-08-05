@@ -24,6 +24,7 @@ Home Assistant states
 - `forecast.py`: learning forecast calibration and corrected power series.
 - `optimizer.py`: charging window selection from forecast slots.
 - `coordinator.py`: Home Assistant state gathering, validation, and update orchestration.
+- `wallbox.py`: pure current validation, debounce, minimum-runtime, and fallback decisions.
 - `sensor.py`: first read-only calculated sensors from coordinator state.
 - platform files: future binary sensors, numbers, selects, switches, and buttons.
 - `websocket.py`: future bridge for the custom frontend panel.
@@ -50,6 +51,7 @@ available surplus power
 recommended charge current
   recommended charge current and power
   expected opportunity cost
+  wallbox control decision
   diagnostic warnings
 ```
 
@@ -116,3 +118,11 @@ control logic needs these guardrails:
 The first usable UI should be the Home Assistant config/options flow plus normal
 entities. A custom panel should be added only after the backend model is stable.
 The panel should use the WebSocket API and never own core charging state itself.
+
+## Wallbox control boundary
+
+The coordinator is the only Home Assistant-facing adapter that may call wallbox
+services. `wallbox.py` remains pure and returns one of `hold`, `start`, `stop`,
+or `set_current`. The coordinator applies a non-hold decision only when the user
+explicitly enabled control and all required entities are mapped. Service failures
+are converted to diagnostics and are not acknowledged as successful actions.

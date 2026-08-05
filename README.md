@@ -19,6 +19,8 @@ Implemented now:
 - coordinator-backed runtime snapshot with conservative unavailable-state handling
 - sensors for PV surplus, recommended current, recommended charge power, and
   opportunity cost
+- opt-in wallbox control with current limits, start/stop debounce, minimum
+  runtime, manual override, and safe fallback
 - manifest metadata for `Schmitt-A/pv-charge-manager`
 - pure Python calculation modules
 - tests for surplus, vehicle demand, tariff allocation, learned forecast
@@ -28,7 +30,8 @@ Implemented now:
 
 Planned next:
 
-- wallbox safety limits and current control
+- vehicle profiles and target SOC persistence
+- persistent forecast observations per PV source
 - custom Home Assistant frontend panel
 
 ## Installation for Home Assistant
@@ -57,6 +60,11 @@ The installer app downloads the current `main` branch and writes only the
 integration directory below the Home Assistant configuration directory. After
 an app update, restart the app and then Home Assistant. Do not install the same
 integration through both this app and HACS at the same time.
+
+Wallbox control is disabled by default. Enable it only after mapping the charging
+switch, current number, and vehicle-connected sensor in the integration options.
+The controller holds on unknown wallbox state or manual override, and can stop
+after its configured minimum runtime when PV or grid input becomes unavailable.
 
 ### HACS
 
@@ -131,6 +139,7 @@ custom_components/pv_charge_manager/
   optimizer.py     Charging window planning helpers
   config_flow.py   Home Assistant config and options flows
   coordinator.py   State snapshot and derived runtime values
+  wallbox.py       Pure wallbox safety and debounce controller
   sensor.py        Initial calculated sensors
   manifest.json    Integration metadata
 apps/

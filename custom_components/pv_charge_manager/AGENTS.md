@@ -16,6 +16,8 @@ Files in this directory are shipped to:
 - Use config flow and options flow for entity mapping; avoid YAML-only setup.
 - Avoid direct device assumptions. Wallbox, vehicle, PV, grid, forecast, and
   battery entities must be selectable.
+- Wallbox control is disabled by default. Do not add a service call that bypasses
+  `wallbox.py` validation, debounce, minimum runtime, or manual override.
 
 ## Safety notes
 

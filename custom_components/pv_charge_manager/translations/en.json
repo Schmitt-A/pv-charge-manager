@@ -32,13 +32,23 @@
           "voltage_v": "Charging voltage",
           "min_current_a": "Minimum charging current",
           "max_current_a": "Maximum charging current",
-          "phases": "Phases"
+          "phases": "Phases",
+          "wallbox_control_enabled": "Enable wallbox control",
+          "wallbox_charging_switch": "Wallbox charging switch",
+          "wallbox_current_number": "Wallbox current number",
+          "wallbox_connected_sensor": "Vehicle connected",
+          "wallbox_charging_power_sensor": "Wallbox charging power",
+          "wallbox_manual_override_sensor": "Manual wallbox override",
+          "wallbox_start_delay_s": "Start delay",
+          "wallbox_stop_delay_s": "Stop delay",
+          "wallbox_minimum_runtime_s": "Minimum runtime"
         }
       }
     },
     "error": {
       "max_current_below_minimum": "Maximum charging current must be at least the minimum charging current.",
-      "invalid_phases": "Only 1 or 3 phases are supported."
+      "invalid_phases": "Only 1 or 3 phases are supported.",
+      "wallbox_control_requires_entities": "Wallbox control requires a charging switch, current number, and vehicle connected sensor."
     }
   },
   "entity": {
@@ -54,6 +64,9 @@
       },
       "opportunity_cost": {
         "name": "Lost feed-in revenue"
+      },
+      "wallbox_action": {
+        "name": "Wallbox action"
       }
     }
   }

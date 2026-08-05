@@ -18,11 +18,12 @@
 
 ## P2 - Safe wallbox control
 
-- [ ] Define wallbox adapter abstraction for Home Assistant entities.
-- [ ] Add current limit validation.
-- [ ] Add start/stop debounce and minimum runtime.
-- [ ] Add fallback behavior for missing PV, grid, or wallbox state.
-- [ ] Add service tests with mocked Home Assistant state.
+- [x] Define wallbox adapter abstraction for Home Assistant entities.
+- [x] Add current limit validation.
+- [x] Add start/stop debounce and minimum runtime.
+- [ ] Add cloud smoothing filter for forecast/current fluctuations.
+- [x] Add fallback behavior for missing PV, grid, or wallbox state.
+- [x] Add service tests with mocked Home Assistant state.
 
 ## P3 - Planning and UI
 

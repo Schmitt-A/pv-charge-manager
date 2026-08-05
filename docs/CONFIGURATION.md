@@ -79,6 +79,23 @@ Required before active control:
 - max current
 - phases
 
+Active control is opt-in through `wallbox_control_enabled` and remains disabled
+until the charging switch, current number, and vehicle-connected binary sensor
+are mapped. Optional mappings are a charging-power sensor and a manual-override
+binary sensor.
+
+Safety defaults:
+
+- start delay: `120` seconds
+- stop delay: `60` seconds
+- minimum runtime: `600` seconds
+- fallback: hold while wallbox state is unknown; stop after the minimum runtime
+  when PV or grid inputs become unavailable
+
+The controller writes the current target before starting the charging switch. It
+never writes when the state is unknown, manual override is active, required
+entities are missing, or control is disabled.
+
 ### Vehicle
 
 - SOC sensor

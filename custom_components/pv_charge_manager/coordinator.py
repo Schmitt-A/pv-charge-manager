@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from logging import Logger
 from typing import Any
 
+from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .allocation import PvSource, allocate_power_by_tariff, allocated_opportunity_cost_eur_per_hour
@@ -25,13 +26,32 @@ from .const import (
     CONF_PV_POWER_SENSORS,
     CONF_RESERVE_POWER_W,
     CONF_VOLTAGE_V,
+    CONF_WALLBOX_CHARGING_POWER_SENSOR,
+    CONF_WALLBOX_CHARGING_SWITCH,
+    CONF_WALLBOX_CONNECTED_SENSOR,
+    CONF_WALLBOX_CONTROL_ENABLED,
+    CONF_WALLBOX_CURRENT_NUMBER,
+    CONF_WALLBOX_MANUAL_OVERRIDE_SENSOR,
+    CONF_WALLBOX_MIN_RUNTIME_S,
+    CONF_WALLBOX_START_DELAY_S,
+    CONF_WALLBOX_STOP_DELAY_S,
     DEFAULT_FEED_IN_TARIFF_EUR_PER_KWH,
     DEFAULT_MAX_CURRENT_A,
     DEFAULT_MIN_CURRENT_A,
     DEFAULT_PHASES,
     DEFAULT_RESERVE_POWER_W,
     DEFAULT_VOLTAGE_V,
+    DEFAULT_WALLBOX_MIN_RUNTIME_S,
+    DEFAULT_WALLBOX_START_DELAY_S,
+    DEFAULT_WALLBOX_STOP_DELAY_S,
     DOMAIN,
+)
+from .wallbox import (
+    WallboxAction,
+    WallboxControlConfig,
+    WallboxController,
+    WallboxDecision,
+    WallboxState,
 )
 
 
@@ -46,6 +66,13 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=timedelta(seconds=30),
         )
         self.entry = entry
+        self._logger = logger
+        self._wallbox_controller: WallboxController | None = None
+        self._wallbox_config_error: str | None = None
+        try:
+            self._wallbox_controller = WallboxController(_wallbox_config(entry.options))
+        except ValueError as err:
+            self._wallbox_config_error = str(err)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch states and return a conservative calculation snapshot."""
@@ -99,6 +126,9 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "recommended_current_a": None,
             "recommended_charge_power_w": None,
             "opportunity_cost_eur_per_hour": None,
+            "wallbox_action": WallboxAction.HOLD.value,
+            "wallbox_reason": "control_disabled",
+            "wallbox_target_current_a": None,
             "warnings": sorted(set(warnings)),
             "mapping": {
                 "pv_power_sensors": pv_entity_ids,
@@ -107,10 +137,18 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "grid_import_sensor": options.get(CONF_GRID_IMPORT_SENSOR),
                 "grid_export_sensor": options.get(CONF_GRID_EXPORT_SENSOR),
                 "battery_charge_power_sensor": battery_entity_id,
+                "wallbox_control_enabled": bool(options.get(CONF_WALLBOX_CONTROL_ENABLED)),
+                "wallbox_charging_switch": options.get(CONF_WALLBOX_CHARGING_SWITCH),
+                "wallbox_current_number": options.get(CONF_WALLBOX_CURRENT_NUMBER),
+                "wallbox_connected_sensor": options.get(CONF_WALLBOX_CONNECTED_SENSOR),
+                "wallbox_charging_power_sensor": options.get(CONF_WALLBOX_CHARGING_POWER_SENSOR),
+                "wallbox_manual_override_sensor": options.get(CONF_WALLBOX_MANUAL_OVERRIDE_SENSOR),
             },
         }
 
         if not available:
+            await self._update_wallbox(result, options, warnings)
+            result["warnings"] = sorted(set(warnings))
             return result
 
         try:
@@ -133,7 +171,9 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
         except (TypeError, ValueError) as err:
             result["available"] = False
-            result["warnings"] = sorted(set(result["warnings"] + [f"invalid_limits:{err}"]))
+            warnings.append(f"invalid_limits:{err}")
+            await self._update_wallbox(result, options, warnings)
+            result["warnings"] = sorted(set(warnings))
             return result
 
         result.update(
@@ -153,7 +193,126 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 ),
             }
         )
+        await self._update_wallbox(result, options, warnings)
+        result["warnings"] = sorted(set(warnings))
         return result
+
+    async def _update_wallbox(
+        self,
+        result: dict[str, Any],
+        options: dict[str, Any],
+        warnings: list[str],
+    ) -> None:
+        """Evaluate and, when explicitly enabled, apply one wallbox action."""
+        if not options.get(CONF_WALLBOX_CONTROL_ENABLED):
+            return
+        if self._wallbox_controller is None:
+            warnings.append(f"invalid_wallbox_config:{self._wallbox_config_error}")
+            result["wallbox_reason"] = "invalid_wallbox_config"
+            return
+
+        required_entities = (
+            CONF_WALLBOX_CHARGING_SWITCH,
+            CONF_WALLBOX_CURRENT_NUMBER,
+            CONF_WALLBOX_CONNECTED_SENSOR,
+        )
+        if any(not options.get(key) for key in required_entities):
+            warnings.append("wallbox_control_not_configured")
+            result["wallbox_reason"] = "wallbox_control_not_configured"
+            return
+
+        wallbox_state = self._read_wallbox_state(result, options, warnings)
+        decision = self._wallbox_controller.evaluate(wallbox_state)
+        result["wallbox_action"] = decision.action.value
+        result["wallbox_reason"] = decision.reason
+        result["wallbox_target_current_a"] = decision.target_current_a
+        await self._apply_wallbox_decision(decision, wallbox_state.now, options, warnings)
+
+    def _read_wallbox_state(
+        self,
+        result: dict[str, Any],
+        options: dict[str, Any],
+        warnings: list[str],
+    ) -> WallboxState:
+        """Read wallbox state without guessing when an entity is unavailable."""
+        connected = _read_binary(self.hass, options.get(CONF_WALLBOX_CONNECTED_SENSOR), warnings)
+        switch_entity_id = options.get(CONF_WALLBOX_CHARGING_SWITCH)
+        charging_power_entity_id = options.get(CONF_WALLBOX_CHARGING_POWER_SENSOR)
+        if charging_power_entity_id:
+            charging_power_w = _read_power(self.hass, charging_power_entity_id, warnings)
+            charging = None if charging_power_w is None else charging_power_w > 50
+        else:
+            charging = _read_binary(self.hass, switch_entity_id, warnings)
+
+        manual_override = False
+        manual_override_entity_id = options.get(CONF_WALLBOX_MANUAL_OVERRIDE_SENSOR)
+        if manual_override_entity_id:
+            override_state = _read_binary(self.hass, manual_override_entity_id, warnings)
+            manual_override = override_state is None or override_state
+
+        current_a = _read_current(self.hass, options.get(CONF_WALLBOX_CURRENT_NUMBER), warnings)
+        return WallboxState(
+            now=datetime.now(UTC),
+            vehicle_connected=connected,
+            charging=charging,
+            current_a=current_a,
+            inputs_available=bool(result.get("available")),
+            recommended_current_a=result.get("recommended_current_a"),
+            manual_override=manual_override,
+        )
+
+    async def _apply_wallbox_decision(
+        self,
+        decision: WallboxDecision,
+        now: datetime,
+        options: dict[str, Any],
+        warnings: list[str],
+    ) -> None:
+        """Apply a decision only after the pure controller has approved it."""
+        try:
+            if decision.action is WallboxAction.START:
+                await self._set_wallbox_current(decision.target_current_a, options)
+                await self.hass.services.async_call(
+                    "switch",
+                    "turn_on",
+                    {ATTR_ENTITY_ID: options[CONF_WALLBOX_CHARGING_SWITCH]},
+                    blocking=True,
+                )
+            elif decision.action is WallboxAction.STOP:
+                await self.hass.services.async_call(
+                    "switch",
+                    "turn_off",
+                    {ATTR_ENTITY_ID: options[CONF_WALLBOX_CHARGING_SWITCH]},
+                    blocking=True,
+                )
+            elif decision.action is WallboxAction.SET_CURRENT:
+                await self._set_wallbox_current(decision.target_current_a, options)
+            else:
+                return
+        except Exception as err:
+            warnings.append(f"wallbox_service_call_failed:{type(err).__name__}")
+            self._logger.exception("PV Charge Manager wallbox service call failed")
+            return
+
+        self._wallbox_controller.acknowledge(decision, now)
+
+    async def _set_wallbox_current(
+        self,
+        target_current_a: float | None,
+        options: dict[str, Any],
+    ) -> None:
+        """Set the wallbox current before starting or while already charging."""
+        if target_current_a is None:
+            raise ValueError("wallbox current target is missing")
+        await self.hass.services.async_call(
+            "number",
+            "set_value",
+            {
+                ATTR_ENTITY_ID: options[CONF_WALLBOX_CURRENT_NUMBER],
+                "value": target_current_a,
+            },
+            blocking=True,
+        )
 
     def _read_home_consumption(
         self,
@@ -192,6 +351,56 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not entity_id:
             return 0.0
         return _read_power(self.hass, entity_id, warnings)
+
+
+def _wallbox_config(options: dict[str, Any]) -> WallboxControlConfig:
+    """Build validated wallbox control limits from config-entry options."""
+    return WallboxControlConfig(
+        minimum_current_a=float(options.get(CONF_MIN_CURRENT_A, DEFAULT_MIN_CURRENT_A)),
+        maximum_current_a=float(options.get(CONF_MAX_CURRENT_A, DEFAULT_MAX_CURRENT_A)),
+        start_delay_s=int(options.get(CONF_WALLBOX_START_DELAY_S, DEFAULT_WALLBOX_START_DELAY_S)),
+        stop_delay_s=int(options.get(CONF_WALLBOX_STOP_DELAY_S, DEFAULT_WALLBOX_STOP_DELAY_S)),
+        minimum_runtime_s=int(
+            options.get(CONF_WALLBOX_MIN_RUNTIME_S, DEFAULT_WALLBOX_MIN_RUNTIME_S)
+        ),
+    )
+
+
+def _read_binary(hass, entity_id: str | None, warnings: list[str]) -> bool | None:
+    """Read an on/off entity and return None for unavailable state."""
+    if not entity_id:
+        return None
+    state = hass.states.get(entity_id)
+    if state is None or state.state in {"unknown", "unavailable"}:
+        warnings.append(f"unavailable:{entity_id}")
+        return None
+    if state.state not in {"on", "off"}:
+        warnings.append(f"invalid_binary_state:{entity_id}")
+        return None
+    return state.state == "on"
+
+
+def _read_current(hass, entity_id: str | None, warnings: list[str]) -> float | None:
+    """Read a wallbox current number in amperes."""
+    if not entity_id:
+        return None
+    state = hass.states.get(entity_id)
+    if state is None or state.state in {"unknown", "unavailable"}:
+        warnings.append(f"unavailable:{entity_id}")
+        return None
+    try:
+        value = float(state.state)
+    except (TypeError, ValueError):
+        warnings.append(f"non_numeric:{entity_id}")
+        return None
+    if not math.isfinite(value) or value < 0:
+        warnings.append(f"invalid_current:{entity_id}")
+        return None
+    unit = str(state.attributes.get("unit_of_measurement", "")).casefold()
+    if unit not in {"", "a"}:
+        warnings.append(f"unexpected_current_unit:{entity_id}")
+        return None
+    return value
 
 
 def _read_power(hass, entity_id: str, warnings: list[str]) -> float | None:

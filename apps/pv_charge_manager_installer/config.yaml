@@ -1,5 +1,5 @@
 name: PV Charge Manager integration
-version: "0.1.0"
+version: "0.2.0"
 slug: pv_charge_manager_installer
 description: >-
   Installs the PV Charge Manager custom integration into Home Assistant.

@@ -32,13 +32,23 @@
           "voltage_v": "Ladespannung",
           "min_current_a": "Minimaler Ladestrom",
           "max_current_a": "Maximaler Ladestrom",
-          "phases": "Phasen"
+          "phases": "Phasen",
+          "wallbox_control_enabled": "Wallbox-Steuerung aktivieren",
+          "wallbox_charging_switch": "Wallbox-Ladeschalter",
+          "wallbox_current_number": "Wallbox-Ladestrom",
+          "wallbox_connected_sensor": "Fahrzeug verbunden",
+          "wallbox_charging_power_sensor": "Wallbox-Ladeleistung",
+          "wallbox_manual_override_sensor": "Manuelle Wallbox-Steuerung",
+          "wallbox_start_delay_s": "Startverzögerung",
+          "wallbox_stop_delay_s": "Stoppverzögerung",
+          "wallbox_minimum_runtime_s": "Minimale Laufzeit"
         }
       }
     },
     "error": {
       "max_current_below_minimum": "Der maximale Ladestrom muss mindestens dem minimalen Ladestrom entsprechen.",
-      "invalid_phases": "Es sind nur 1 oder 3 Phasen zulässig."
+      "invalid_phases": "Es sind nur 1 oder 3 Phasen zulässig.",
+      "wallbox_control_requires_entities": "Für die Wallbox-Steuerung müssen Ladeschalter, Ladestrom-Nummer und Fahrzeug-Sensor zugeordnet sein."
     }
   },
   "entity": {
@@ -54,6 +64,9 @@
       },
       "opportunity_cost": {
         "name": "Entgangene Einspeisevergütung"
+      },
+      "wallbox_action": {
+        "name": "Wallbox-Aktion"
       }
     }
   }

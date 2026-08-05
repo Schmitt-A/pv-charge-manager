@@ -9,6 +9,7 @@ Tests in this directory should validate the pure Python behavior first:
 - vehicle energy demand
 - forecast correction
 - charge window planning
+- wallbox current limits, debounce, minimum runtime, and fallback decisions
 
 Do not require a running Home Assistant instance for these tests. Add Home
 Assistant integration tests later under a separate marker once the runtime setup
