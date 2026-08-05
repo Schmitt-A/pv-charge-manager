@@ -9,6 +9,8 @@ a running Home Assistant instance for every change.
 ## Repository map
 
 - `custom_components/pv_charge_manager/` contains the Home Assistant integration.
+- `apps/pv_charge_manager_installer/` contains the Home Assistant OS app
+  installer. It must remain a narrow installer and must not control hardware.
 - `custom_components/pv_charge_manager/calculation.py`, `allocation.py`,
   `forecast.py`, and `optimizer.py` contain pure Python domain logic.
 - `tests/` covers the pure Python logic and should remain fast and independent.
@@ -51,6 +53,9 @@ python -m pip install -e ".[dev,ha]"
 - Treat `manifest.json` and translations as user-facing release metadata.
 - Keep README content aligned with the current implementation status. Do not claim
   production-ready charging control before wallbox safety logic is implemented.
+- The app installer downloads the integration from the public `main` branch and
+  writes to the mapped Home Assistant config directory. Keep its permissions and
+  network behavior explicit in the app documentation.
 
 ## Current status
 

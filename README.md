@@ -9,13 +9,16 @@ Repository: <https://github.com/Schmitt-A/pv-charge-manager>
 
 ## Status
 
-This repository is ready for Codex-based development and early local testing.
-It is not yet production-ready for unattended wallbox control.
+This repository is ready for Codex-based development and early Home Assistant
+testing. It is not yet production-ready for unattended wallbox control.
 
 Implemented now:
 
 - Home Assistant custom integration skeleton
-- config flow entry point
+- config flow and options flow for entity mapping and electrical limits
+- coordinator-backed runtime snapshot with conservative unavailable-state handling
+- sensors for PV surplus, recommended current, recommended charge power, and
+  opportunity cost
 - manifest metadata for `Schmitt-A/pv-charge-manager`
 - pure Python calculation modules
 - tests for surplus, vehicle demand, tariff allocation, learned forecast
@@ -25,15 +28,51 @@ Implemented now:
 
 Planned next:
 
-- full entity mapping through options flow
-- coordinator-backed runtime state
-- sensor, number, select, switch, button entities
 - wallbox safety limits and current control
 - custom Home Assistant frontend panel
 
 ## Installation for Home Assistant
 
-For manual testing, copy this directory into your Home Assistant configuration:
+### Home Assistant OS app repository
+
+This is the simplest installation path for Home Assistant OS. Home Assistant
+apps are not available with Home Assistant Container, Core, or supervised
+installations.
+
+1. Open `Settings -> Apps -> Install app`.
+2. Open the three-dot menu and select `Repositories`.
+3. Add this repository URL:
+
+   ```text
+   https://github.com/Schmitt-A/pv-charge-manager
+   ```
+
+4. Install `PV Charge Manager integration` and start it once.
+5. Restart Home Assistant.
+6. Open `Settings -> Devices & services -> Add integration` and select `PV Charge Manager`.
+7. Open the integration options and map the PV, home-consumption, grid, and
+   optional battery sensors.
+
+The installer app downloads the current `main` branch and writes only the
+integration directory below the Home Assistant configuration directory. After
+an app update, restart the app and then Home Assistant. Do not install the same
+integration through both this app and HACS at the same time.
+
+### HACS
+
+For Home Assistant Container, Core, or supervised installations, add this
+repository as a custom HACS integration repository:
+
+```text
+https://github.com/Schmitt-A/pv-charge-manager
+```
+
+Then download `PV Charge Manager` under `HACS -> Integrations` and restart
+Home Assistant.
+
+### Manual installation
+
+Copy this directory into your Home Assistant configuration:
 
 ```text
 custom_components/pv_charge_manager/
@@ -50,6 +89,13 @@ Restart Home Assistant and add the integration through:
 ```text
 Settings -> Devices & services -> Add integration -> PV Charge Manager
 ```
+
+### Important limitation
+
+The app repository is a convenience installer for Home Assistant OS. It does
+not run a separate forecasting service and it does not control the wallbox. The
+forecast learning model and charge planning are currently pure, testable domain
+logic; persistence and runtime integration are planned in the roadmap.
 
 ## Development setup
 
@@ -83,8 +129,12 @@ custom_components/pv_charge_manager/
   allocation.py    Economic allocation by feed-in tariff
   forecast.py      Forecast correction helpers
   optimizer.py     Charging window planning helpers
-  config_flow.py   Home Assistant config flow
+  config_flow.py   Home Assistant config and options flows
+  coordinator.py   State snapshot and derived runtime values
+  sensor.py        Initial calculated sensors
   manifest.json    Integration metadata
+apps/
+  pv_charge_manager_installer/  Home Assistant OS app installer
 docs/
   ARCHITECTURE.md
   CONFIGURATION.md
@@ -115,11 +165,11 @@ opportunity cost is assigned to EV charging first. This is a balance-sheet model
 physical electrons are not routed by inverter.
 
 For solar forecast planning, the raw forecast should not be trusted blindly. The
-integration keeps historic forecast-vs-actual observations and learns a bounded
+domain model keeps historic forecast-vs-actual observations and learns a bounded
 correction factor. If the forecast was too low and the real yield was higher, the
 future planning forecast is adjusted upward. If the forecast was too high, it is
 adjusted downward. This corrected forecast is the intended input for charge-plan
-optimization.
+optimization. Persisting observations per PV source is a later roadmap item.
 
 ## Documentation
 

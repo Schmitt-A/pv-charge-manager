@@ -31,3 +31,17 @@ jobs:
 
       - name: Tests
         run: pytest
+
+      - name: Validate Home Assistant app repository
+        run: |
+          bash -n apps/pv_charge_manager_installer/run.sh
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import yaml
+
+          for path in (Path("repository.yaml"), Path("apps/pv_charge_manager_installer/config.yaml")):
+              assert isinstance(yaml.safe_load(path.read_text()), dict), path
+          for path in Path(".").glob("**/*.json"):
+              json.loads(path.read_text())
+          PY

@@ -1,8 +1,13 @@
 # Configuration Model
 
-PV Charge Manager is designed for UI-based setup through Home Assistant config
-and options flows. The example YAML in `examples/configuration.yaml` documents
-the intended data model, not a production YAML interface.
+PV Charge Manager is configured through the Home Assistant config and options
+flows. The example YAML in `examples/configuration.yaml` documents the data
+model and entity naming, not a production YAML interface.
+
+After the integration is installed, open its `Configure` action and map the
+entities used by the calculation. A valid calculation needs at least one PV
+power sensor and either a home-consumption sensor or both grid import and grid
+export sensors.
 
 ## Required entity groups
 
@@ -18,7 +23,7 @@ the intended data model, not a production YAML interface.
 
 ### PV systems
 
-Each PV source should have:
+Each PV source can have:
 
 - name
 - current power sensor
@@ -31,7 +36,7 @@ Each PV source should have:
 
 ### Forecast learning
 
-The integration should persist historic forecast observations per PV source:
+The pure forecast model supports historic forecast observations per PV source:
 
 ```text
 forecast kWh
@@ -42,7 +47,8 @@ sample count
 ```
 
 The correction factor is applied to future forecast values before the optimizer
-selects charge windows. Recommended defaults:
+selects charge windows. Runtime persistence and per-source observation capture
+are planned for version 0.4. Recommended defaults:
 
 - learning rate: `0.25`
 - minimum factor: `0.5`
@@ -81,6 +87,19 @@ Required before active control:
 - charging efficiency
 - maximum current
 - departure time or weekly schedule
+
+## Current calculated entities
+
+The first roadmap milestone exposes these read-only sensors:
+
+- PV surplus after home consumption, battery charging, and safety reserve
+- recommended current within the configured electrical limits
+- recommended charging power
+- opportunity cost per hour based on the configured feed-in tariff
+
+If a required sensor is unavailable, these sensors become unavailable and expose
+the reason in their `warnings` attributes. This is intentional: the integration
+does not guess a safe charging recommendation from missing input.
 
 ## Charging modes
 

@@ -23,13 +23,14 @@ Home Assistant states
 - `allocation.py`: balance-sheet allocation of PV sources by feed-in tariff.
 - `forecast.py`: learning forecast calibration and corrected power series.
 - `optimizer.py`: charging window selection from forecast slots.
-- `coordinator.py`: Home Assistant state gathering and update orchestration.
-- platform files: sensors, binary sensors, numbers, selects, switches, buttons.
+- `coordinator.py`: Home Assistant state gathering, validation, and update orchestration.
+- `sensor.py`: first read-only calculated sensors from coordinator state.
+- platform files: future binary sensors, numbers, selects, switches, and buttons.
 - `websocket.py`: future bridge for the custom frontend panel.
 
 ## Runtime model
 
-The coordinator will read configured entity states every update cycle and build a
+The coordinator reads configured entity states every 30 seconds and builds a
 normalized snapshot:
 
 ```text
@@ -47,10 +48,9 @@ The calculation layer then produces:
 ```text
 available surplus power
 recommended charge current
-planned charge windows
-expected opportunity cost
-target SOC feasibility
-diagnostic warnings
+  recommended charge current and power
+  expected opportunity cost
+  diagnostic warnings
 ```
 
 ## Economic allocation
@@ -91,9 +91,10 @@ Behavior:
 - if the forecast was too high and actual yield was lower, the factor moves down
 - each update uses a learning rate so one unusual day cannot dominate the model
 
-The first implementation uses a global exponential moving correction factor. A
-later version should split the model by PV system, season, weather class, and
-time of day so morning, noon, and evening errors can be corrected differently.
+The first implementation uses a global exponential moving correction factor in
+pure domain code. A later version should persist observations and split the model
+by PV system, season, weather class, and time of day so morning, noon, and evening
+errors can be corrected differently.
 
 Charge planning must consume the corrected forecast, not the raw forecast, once
 enough historic observations are available.

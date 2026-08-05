@@ -1,0 +1,20 @@
+name: PV Charge Manager integration
+version: "0.1.0"
+slug: pv_charge_manager_installer
+description: >-
+  Installs the PV Charge Manager custom integration into Home Assistant.
+  The integration itself is configured after the installation in Devices & services.
+url: https://github.com/Schmitt-A/pv-charge-manager
+arch:
+  - amd64
+  - aarch64
+homeassistant: "2025.1.0"
+startup: once
+boot: auto
+stage: experimental
+timeout: 120
+map:
+  - type: homeassistant_config
+    read_only: false
+    path: /homeassistant
+schema: false

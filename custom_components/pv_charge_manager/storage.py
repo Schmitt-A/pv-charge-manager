@@ -17,6 +17,19 @@ class EntityMapping:
     pv_power_sensors: list[str] = field(default_factory=list)
     forecast_sensors: list[str] = field(default_factory=list)
 
+    @classmethod
+    def from_options(cls, options: dict) -> EntityMapping:
+        """Build an entity mapping from config-entry options."""
+        return cls(
+            grid_import_sensor=options.get("grid_import_sensor"),
+            grid_export_sensor=options.get("grid_export_sensor"),
+            home_consumption_sensor=options.get("home_consumption_sensor"),
+            battery_soc_sensor=options.get("battery_soc_sensor"),
+            battery_charge_power_sensor=options.get("battery_charge_power_sensor"),
+            pv_power_sensors=list(options.get("pv_power_sensors", [])),
+            forecast_sensors=list(options.get("forecast_sensors", [])),
+        )
+
 
 @dataclass(slots=True)
 class VehicleProfile:

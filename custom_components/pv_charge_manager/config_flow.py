@@ -1,12 +1,38 @@
-"""Config flow for PV Charge Manager."""
+"""Config and options flow for PV Charge Manager."""
 
 from __future__ import annotations
+
+from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.helpers import selector
 
-from .const import CONF_NAME, DEFAULT_NAME, DOMAIN
+from .const import (
+    CONF_BATTERY_CHARGE_POWER_SENSOR,
+    CONF_BATTERY_SOC_SENSOR,
+    CONF_FEED_IN_TARIFF_EUR_PER_KWH,
+    CONF_FORECAST_SENSORS,
+    CONF_GRID_EXPORT_SENSOR,
+    CONF_GRID_IMPORT_SENSOR,
+    CONF_HOME_CONSUMPTION_SENSOR,
+    CONF_MAX_CURRENT_A,
+    CONF_MIN_CURRENT_A,
+    CONF_NAME,
+    CONF_PHASES,
+    CONF_PV_POWER_SENSORS,
+    CONF_RESERVE_POWER_W,
+    CONF_VOLTAGE_V,
+    DEFAULT_FEED_IN_TARIFF_EUR_PER_KWH,
+    DEFAULT_MAX_CURRENT_A,
+    DEFAULT_MIN_CURRENT_A,
+    DEFAULT_NAME,
+    DEFAULT_PHASES,
+    DEFAULT_RESERVE_POWER_W,
+    DEFAULT_VOLTAGE_V,
+    DOMAIN,
+)
 
 
 class PVChargeManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -14,10 +40,8 @@ class PVChargeManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Create the initial config entry."""
-        errors: dict[str, str] = {}
-
         if user_input is not None:
             await self.async_set_unique_id(DOMAIN)
             self._abort_if_unique_id_configured()
@@ -33,28 +57,134 @@ class PVChargeManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_NAME, default=DEFAULT_NAME): str,
                 }
             ),
-            errors=errors,
         )
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
         """Return the options flow handler."""
-        return PVChargeManagerOptionsFlow(config_entry)
+        return PVChargeManagerOptionsFlow()
 
 
 class PVChargeManagerOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for PV Charge Manager."""
+    """Configure entity mapping and electrical limits."""
 
-    def __init__(self, config_entry) -> None:
-        self.config_entry = config_entry
-
-    async def async_step_init(self, user_input=None):
-        """Manage initial options."""
+    async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        """Manage entity mapping and calculation options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            normalized = _normalize_input(user_input)
+            errors = _validate_options(normalized)
+            if not errors:
+                return self.async_create_entry(title="", data=normalized)
+        else:
+            normalized = dict(self.config_entry.options)
+            errors = {}
 
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema({}),
+            data_schema=_options_schema(normalized),
+            errors=errors,
         )
+
+
+def _options_schema(options: dict[str, Any]) -> vol.Schema:
+    """Build the Home Assistant options form schema."""
+    return vol.Schema(
+        {
+            vol.Optional(
+                CONF_PV_POWER_SENSORS,
+                default=options.get(CONF_PV_POWER_SENSORS, []),
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor", multiple=True)
+            ),
+            vol.Optional(
+                CONF_FORECAST_SENSORS,
+                default=options.get(CONF_FORECAST_SENSORS, []),
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor", multiple=True)
+            ),
+            vol.Optional(
+                CONF_HOME_CONSUMPTION_SENSOR,
+                default=options.get(CONF_HOME_CONSUMPTION_SENSOR),
+            ): _sensor_selector(),
+            vol.Optional(
+                CONF_GRID_IMPORT_SENSOR,
+                default=options.get(CONF_GRID_IMPORT_SENSOR),
+            ): _sensor_selector(),
+            vol.Optional(
+                CONF_GRID_EXPORT_SENSOR,
+                default=options.get(CONF_GRID_EXPORT_SENSOR),
+            ): _sensor_selector(),
+            vol.Optional(
+                CONF_BATTERY_CHARGE_POWER_SENSOR,
+                default=options.get(CONF_BATTERY_CHARGE_POWER_SENSOR),
+            ): _sensor_selector(),
+            vol.Optional(
+                CONF_BATTERY_SOC_SENSOR,
+                default=options.get(CONF_BATTERY_SOC_SENSOR),
+            ): _sensor_selector(),
+            vol.Required(
+                CONF_RESERVE_POWER_W,
+                default=options.get(CONF_RESERVE_POWER_W, DEFAULT_RESERVE_POWER_W),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=10_000, step=10)),
+            vol.Required(
+                CONF_FEED_IN_TARIFF_EUR_PER_KWH,
+                default=options.get(
+                    CONF_FEED_IN_TARIFF_EUR_PER_KWH,
+                    DEFAULT_FEED_IN_TARIFF_EUR_PER_KWH,
+                ),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=2, step=0.001)),
+            vol.Required(
+                CONF_VOLTAGE_V,
+                default=options.get(CONF_VOLTAGE_V, DEFAULT_VOLTAGE_V),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=100, max=500, step=1)),
+            vol.Required(
+                CONF_MIN_CURRENT_A,
+                default=options.get(CONF_MIN_CURRENT_A, DEFAULT_MIN_CURRENT_A),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=63, step=1)),
+            vol.Required(
+                CONF_MAX_CURRENT_A,
+                default=options.get(CONF_MAX_CURRENT_A, DEFAULT_MAX_CURRENT_A),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=63, step=1)),
+            vol.Required(
+                CONF_PHASES,
+                default=options.get(CONF_PHASES, DEFAULT_PHASES),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=3, step=2)),
+        }
+    )
+
+
+def _sensor_selector() -> selector.EntitySelector:
+    """Return a selector for one numeric Home Assistant sensor."""
+    return selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor"))
+
+
+def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
+    """Normalize selector output before it is stored in the config entry."""
+    normalized = dict(user_input)
+    for key in (CONF_PV_POWER_SENSORS, CONF_FORECAST_SENSORS):
+        value = normalized.get(key, [])
+        if isinstance(value, str):
+            value = [value]
+        normalized[key] = [entity_id for entity_id in value if entity_id]
+
+    for key in (
+        CONF_HOME_CONSUMPTION_SENSOR,
+        CONF_GRID_IMPORT_SENSOR,
+        CONF_GRID_EXPORT_SENSOR,
+        CONF_BATTERY_CHARGE_POWER_SENSOR,
+        CONF_BATTERY_SOC_SENSOR,
+    ):
+        if not normalized.get(key):
+            normalized[key] = None
+
+    return normalized
+
+
+def _validate_options(options: dict[str, Any]) -> dict[str, str]:
+    """Return user-facing validation errors for unsafe electrical limits."""
+    if options[CONF_MAX_CURRENT_A] < options[CONF_MIN_CURRENT_A]:
+        return {"base": "max_current_below_minimum"}
+    if options[CONF_PHASES] not in {1, 3}:
+        return {"base": "invalid_phases"}
+    return {}

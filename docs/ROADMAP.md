@@ -6,12 +6,12 @@ Goal: installable integration that reads mapped entities and exposes useful
 derived sensors without controlling the wallbox.
 
 - config flow entry
-- options flow for grid, home, PV, battery, forecast, wallbox, vehicle
-- coordinator state snapshot
+- options flow for grid, home, PV, battery, and forecast entity mapping
+- coordinator state snapshot with 30-second refresh
 - surplus power sensor
-- recommended current sensor
+- recommended current and charge power sensors
 - opportunity cost sensor
-- diagnostics for missing or invalid input
+- diagnostics and warning attributes for missing or invalid input
 - tests for core calculations
 
 ## Version 0.2 - Wallbox control
@@ -45,7 +45,7 @@ Goal: vehicle-aware planning.
 Goal: use forecast windows to decide when charging should happen.
 
 - quarter-hour or hourly forecast slots
-- learned forecast correction from historic forecast-vs-actual production
+- connect the learned forecast correction to runtime observations
 - per-PV-source correction factors
 - minimum sample threshold before the corrected forecast receives full trust
 - household consumption baseline

@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "PV Charge Manager einrichten",
-        "description": "Erstellt den ersten Integrationseintrag. Die Zuordnung der Entitaeten folgt in einem spaeteren Entwicklungsschritt ueber Optionen.",
+        "description": "Erstellt den Integrationseintrag. Die Sensoren werden anschließend in den Optionen zugeordnet.",
         "data": {
           "name": "Name"
         }
@@ -18,7 +18,42 @@
     "step": {
       "init": {
         "title": "PV Charge Manager Optionen",
-        "description": "Die genaue Zuordnung der Entitaeten wird in einem spaeteren Meilenstein ergaenzt."
+        "description": "Ordne die Sensoren zu und lege die elektrischen Grenzen für die Berechnung fest.",
+        "data": {
+          "pv_power_sensors": "PV-Leistungssensoren",
+          "forecast_sensors": "Solarforecast-Sensoren",
+          "home_consumption_sensor": "Hausverbrauch",
+          "grid_import_sensor": "Netzbezug",
+          "grid_export_sensor": "Netzeinspeisung",
+          "battery_charge_power_sensor": "Batterie-Ladeleistung",
+          "battery_soc_sensor": "Batterie-Ladezustand",
+          "reserve_power_w": "Sicherheitsreserve",
+          "feed_in_tariff_eur_per_kwh": "Einspeisevergütung",
+          "voltage_v": "Ladespannung",
+          "min_current_a": "Minimaler Ladestrom",
+          "max_current_a": "Maximaler Ladestrom",
+          "phases": "Phasen"
+        }
+      }
+    },
+    "error": {
+      "max_current_below_minimum": "Der maximale Ladestrom muss mindestens dem minimalen Ladestrom entsprechen.",
+      "invalid_phases": "Es sind nur 1 oder 3 Phasen zulässig."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "surplus_power": {
+        "name": "PV-Überschuss"
+      },
+      "recommended_current": {
+        "name": "Empfohlener Ladestrom"
+      },
+      "recommended_charge_power": {
+        "name": "Empfohlene Ladeleistung"
+      },
+      "opportunity_cost": {
+        "name": "Entgangene Einspeisevergütung"
       }
     }
   }

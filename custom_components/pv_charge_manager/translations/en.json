@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Set up PV Charge Manager",
-        "description": "Create the initial integration entry. Entity mapping is added through options in later development steps.",
+        "description": "Create the integration entry. Map the sensors in the options after setup.",
         "data": {
           "name": "Name"
         }
@@ -18,7 +18,42 @@
     "step": {
       "init": {
         "title": "PV Charge Manager options",
-        "description": "Detailed entity mapping will be added in a later milestone."
+        "description": "Map the sensors and define the electrical limits used for the calculation.",
+        "data": {
+          "pv_power_sensors": "PV power sensors",
+          "forecast_sensors": "Solar forecast sensors",
+          "home_consumption_sensor": "Home consumption",
+          "grid_import_sensor": "Grid import",
+          "grid_export_sensor": "Grid export",
+          "battery_charge_power_sensor": "Battery charge power",
+          "battery_soc_sensor": "Battery state of charge",
+          "reserve_power_w": "Safety reserve",
+          "feed_in_tariff_eur_per_kwh": "Feed-in tariff",
+          "voltage_v": "Charging voltage",
+          "min_current_a": "Minimum charging current",
+          "max_current_a": "Maximum charging current",
+          "phases": "Phases"
+        }
+      }
+    },
+    "error": {
+      "max_current_below_minimum": "Maximum charging current must be at least the minimum charging current.",
+      "invalid_phases": "Only 1 or 3 phases are supported."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "surplus_power": {
+        "name": "PV surplus"
+      },
+      "recommended_current": {
+        "name": "Recommended charging current"
+      },
+      "recommended_charge_power": {
+        "name": "Recommended charge power"
+      },
+      "opportunity_cost": {
+        "name": "Lost feed-in revenue"
       }
     }
   }

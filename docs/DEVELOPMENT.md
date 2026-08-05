@@ -33,6 +33,11 @@ Copy or symlink the custom integration into a Home Assistant config directory:
 /config/custom_components/pv_charge_manager/
 ```
 
+The Home Assistant OS app installer lives in
+`apps/pv_charge_manager_installer/`. It is intentionally tested as a repository
+structure and shell script, while the actual integration behavior remains in
+`custom_components/pv_charge_manager/`.
+
 ## Coding conventions
 
 - Use explicit units in names.
@@ -50,5 +55,7 @@ Before tagging a release:
 3. `pytest`
 4. Update `custom_components/pv_charge_manager/manifest.json`.
 5. Update `README.md` status and installation notes.
-6. Update `docs/ROADMAP.md` and `docs/TODO.md`.
-7. Create a GitHub release with a clear Home Assistant compatibility note.
+6. Update `apps/pv_charge_manager_installer/config.yaml` when the installer
+   behavior or supported Home Assistant version changes.
+7. Update `docs/ROADMAP.md` and `docs/TODO.md`.
+8. Create a GitHub release with a clear Home Assistant compatibility note.

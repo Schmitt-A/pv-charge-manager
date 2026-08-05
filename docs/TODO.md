@@ -10,11 +10,11 @@
 
 ## P1 - Installable integration MVP
 
-- [ ] Implement options flow for entity mapping.
-- [ ] Build coordinator state snapshot from Home Assistant states.
-- [ ] Add sensors for surplus, recommended current, and opportunity cost.
-- [ ] Add diagnostics for unavailable or invalid sensors.
-- [ ] Add repair or warning messages for unsafe configuration.
+- [x] Implement options flow for entity mapping.
+- [x] Build coordinator state snapshot from Home Assistant states.
+- [x] Add sensors for surplus, recommended current, and opportunity cost.
+- [x] Add diagnostics for unavailable or invalid sensors.
+- [x] Add validation and warning messages for unsafe configuration.
 
 ## P2 - Safe wallbox control
 
@@ -31,6 +31,7 @@
 - [ ] Add forecast optimizer using corrected real forecast slots.
 - [ ] Persist historic forecast-vs-actual observations.
 - [ ] Expose learned forecast correction factor per PV source.
+- [ ] Connect forecast observations to the coordinator and charge-plan inputs.
 - [ ] Add custom panel WebSocket commands.
 - [ ] Build first operational Home Assistant panel.
 
