@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pv-charge-manager"
+version = "0.1.0.dev0"
+description = "Home Assistant custom integration for PV-aware EV charging."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Andreas Schmitt" }]
+keywords = ["home-assistant", "ev-charging", "photovoltaics", "wallbox"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pre-commit>=3.8",
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.6.0",
+]
+ha = [
+  "homeassistant>=2025.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Schmitt-A/pv-charge-manager"
+Repository = "https://github.com/Schmitt-A/pv-charge-manager"
+Issues = "https://github.com/Schmitt-A/pv-charge-manager/issues"
+
+[tool.setuptools.packages.find]
+include = ["custom_components*"]
+
+[tool.setuptools.package-data]
+"custom_components.pv_charge_manager" = [
+  "manifest.json",
+  "services.yaml",
+  "translations/*.json",
+  "frontend/*.js",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

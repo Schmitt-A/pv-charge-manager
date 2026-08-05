@@ -1,0 +1,18 @@
+recalculate:
+  name: Recalculate charge plan
+  description: Recalculate the PV charge plan from the latest available states.
+  fields: {}
+
+start_boost:
+  name: Start boost charging
+  description: Start a future boost charging mode after safety checks are implemented.
+  fields:
+    duration_minutes:
+      name: Duration
+      description: Requested boost duration in minutes.
+      required: false
+      selector:
+        number:
+          min: 5
+          max: 240
+          unit_of_measurement: min

@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest an improvement for PV Charge Manager
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: What should the integration help you do?
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Relevant devices, entities, tariffs, or charging rules.

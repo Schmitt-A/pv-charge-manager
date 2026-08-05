@@ -1,0 +1,14 @@
+{
+  "domain": "pv_charge_manager",
+  "name": "PV Charge Manager",
+  "after_dependencies": [],
+  "codeowners": ["@Schmitt-A"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Schmitt-A/pv-charge-manager",
+  "integration_type": "hub",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/Schmitt-A/pv-charge-manager/issues",
+  "requirements": [],
+  "version": "0.1.0-dev"
+}

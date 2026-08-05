@@ -1,0 +1,51 @@
+# Example entity mapping for development notes.
+# The integration is intended to use the Home Assistant UI config/options flow.
+# Do not paste this into production without adapting entity IDs.
+
+pv_charge_manager:
+  grid:
+    import_power_sensor: sensor.grid_import_power
+    export_power_sensor: sensor.grid_export_power
+  home:
+    consumption_power_sensor: sensor.home_consumption_power
+  battery:
+    soc_sensor: sensor.sonnenbattery_soc
+    charge_power_sensor: sensor.sonnenbattery_charge_power
+    capacity_kwh: 11.0
+    minimum_soc_percent: 20
+  pv_systems:
+    - name: sma_roof
+      power_sensor: sensor.sma_roof_power
+      energy_sensor: sensor.sma_roof_energy_today
+      forecast_sensor: sensor.sma_roof_forecast_remaining
+      feed_in_tariff_eur_per_kwh: 0.08
+      priority: 10
+      forecast_learning:
+        enabled: true
+        learning_rate: 0.25
+        minimum_factor: 0.5
+        maximum_factor: 1.3
+    - name: sungrow
+      power_sensor: sensor.sungrow_total_dc_power
+      energy_sensor: sensor.sungrow_energy_today
+      forecast_sensor: sensor.sungrow_forecast_remaining
+      feed_in_tariff_eur_per_kwh: 0.25
+      priority: 20
+      forecast_learning:
+        enabled: true
+        learning_rate: 0.25
+        minimum_factor: 0.5
+        maximum_factor: 1.3
+  wallbox:
+    charging_switch: switch.wallbox_charging
+    current_number: number.wallbox_current
+    connected_binary_sensor: binary_sensor.wallbox_vehicle_connected
+    phases: 3
+    min_current_a: 6
+    max_current_a: 16
+  vehicle:
+    name: primary_ev
+    soc_sensor: sensor.car_soc
+    capacity_kwh: 77
+    target_soc_percent: 80
+    charging_efficiency: 0.9

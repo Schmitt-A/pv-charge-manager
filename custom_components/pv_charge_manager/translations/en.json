@@ -1,0 +1,25 @@
+{
+  "title": "PV Charge Manager",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up PV Charge Manager",
+        "description": "Create the initial integration entry. Entity mapping is added through options in later development steps.",
+        "data": {
+          "name": "Name"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "PV Charge Manager is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "PV Charge Manager options",
+        "description": "Detailed entity mapping will be added in a later milestone."
+      }
+    }
+  }
+}

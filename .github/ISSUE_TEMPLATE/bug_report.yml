@@ -1,0 +1,31 @@
+name: Bug report
+description: Report a problem with PV Charge Manager
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: Entity mappings, modes, and limits.
+      render: yaml
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: false

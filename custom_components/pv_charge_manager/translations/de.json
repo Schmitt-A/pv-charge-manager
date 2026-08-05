@@ -1,0 +1,25 @@
+{
+  "title": "PV Charge Manager",
+  "config": {
+    "step": {
+      "user": {
+        "title": "PV Charge Manager einrichten",
+        "description": "Erstellt den ersten Integrationseintrag. Die Zuordnung der Entitaeten folgt in einem spaeteren Entwicklungsschritt ueber Optionen.",
+        "data": {
+          "name": "Name"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "PV Charge Manager ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "PV Charge Manager Optionen",
+        "description": "Die genaue Zuordnung der Entitaeten wird in einem spaeteren Meilenstein ergaenzt."
+      }
+    }
+  }
+}

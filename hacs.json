@@ -1,0 +1,6 @@
+{
+  "name": "PV Charge Manager",
+  "render_readme": true,
+  "domains": ["sensor", "binary_sensor", "number", "select", "switch", "button"],
+  "homeassistant": "2025.1.0"
+}
