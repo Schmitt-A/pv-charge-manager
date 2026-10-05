@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from logging import Logger
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -15,6 +16,7 @@ from .allocation import PvSource, allocate_power_by_tariff, allocated_opportunit
 from .calculation import ChargeLimits, PowerSnapshot, recommend_current
 from .const import (
     CONF_BATTERY_CHARGE_POWER_SENSOR,
+    CONF_BATTERY_SOC_SENSOR,
     CONF_FEED_IN_TARIFF_EUR_PER_KWH,
     CONF_FORECAST_SENSORS,
     CONF_GRID_EXPORT_SENSOR,
@@ -46,6 +48,7 @@ from .const import (
     DEFAULT_WALLBOX_STOP_DELAY_S,
     DOMAIN,
 )
+from .day_preview import build_day_preview, parse_departure, parse_number_series, sum_series
 from .wallbox import (
     WallboxAction,
     WallboxControlConfig,
@@ -148,8 +151,7 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         if not available:
             await self._update_wallbox(result, options, warnings)
-            result["warnings"] = sorted(set(warnings))
-            return result
+            return self._finish(result, warnings)
 
         try:
             limits = ChargeLimits(
@@ -173,8 +175,7 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             result["available"] = False
             warnings.append(f"invalid_limits:{err}")
             await self._update_wallbox(result, options, warnings)
-            result["warnings"] = sorted(set(warnings))
-            return result
+            return self._finish(result, warnings)
 
         result.update(
             {
@@ -194,8 +195,7 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             }
         )
         await self._update_wallbox(result, options, warnings)
-        result["warnings"] = sorted(set(warnings))
-        return result
+        return self._finish(result, warnings)
 
     async def _update_wallbox(
         self,
@@ -346,11 +346,217 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             3,
         )
 
+    def _finish(self, result: dict[str, Any], warnings: list[str]) -> dict[str, Any]:
+        """Attach the forecast preview. The wallbox setpoint is left untouched."""
+        try:
+            self._attach_day_preview(result, warnings)
+        except (TypeError, ValueError, OverflowError) as err:
+            warnings.append(f"forecast_preview_failed:{err}")
+        result["warnings"] = sorted(set(warnings))
+        return result
+
+    def _attach_day_preview(self, result: dict[str, Any], warnings: list[str]) -> None:
+        """Read forecast entities and store the day preview next to the surplus."""
+        options = self.entry.options
+        entity_ids = list(options.get(CONF_FORECAST_SENSORS) or [])
+        if not entity_ids:
+            return
+        series: list[list[float]] = []
+        for entity_id in entity_ids:
+            raw = _read_state_text(self.hass, entity_id, warnings)
+            if raw is None:
+                continue
+            values = parse_number_series(raw)
+            if values is None:
+                warnings.append(f"invalid_forecast:{entity_id}")
+                continue
+            scaled = _scale_power(values, _state_unit(self.hass, entity_id))
+            if scaled is None:
+                warnings.append(f"unexpected_power_unit:{entity_id}")
+                continue
+            series.append(scaled)
+        if not series:
+            warnings.append("forecast_unavailable")
+            return
+        home_w = result.get("home_consumption_w")
+        if home_w is None:
+            warnings.append("forecast_preview_unavailable")
+            return
+        battery_soc = _read_percent(self.hass, options.get(CONF_BATTERY_SOC_SENSOR), warnings)
+        if battery_soc is None:
+            warnings.append("battery_soc_unavailable")
+            return
+        settings, learning, plans = _stored_state(getattr(self, "runtime_store", None))
+        capacity = _optional_float(settings.get("battery_capacity_kwh"))
+        if capacity is None or capacity <= 0:
+            warnings.append("battery_capacity_missing")
+            return
+        vehicle_soc, assumption = _vehicle_soc(self.hass, options, settings, warnings)
+        try:
+            limits = ChargeLimits(
+                minimum_current_a=float(options.get(CONF_MIN_CURRENT_A, DEFAULT_MIN_CURRENT_A)),
+                maximum_current_a=float(options.get(CONF_MAX_CURRENT_A, DEFAULT_MAX_CURRENT_A)),
+                phases=int(options.get(CONF_PHASES, DEFAULT_PHASES)),
+                voltage_v=float(options.get(CONF_VOLTAGE_V, DEFAULT_VOLTAGE_V)),
+            )
+        except (TypeError, ValueError):
+            limits = ChargeLimits()
+        now = self._now()
+        departure = _departure(plans, settings, now)
+        preview = build_day_preview(
+            forecast_w=sum_series(series),
+            home_w=float(home_w),
+            now=now,
+            battery_soc=battery_soc,
+            battery_capacity_kwh=capacity,
+            battery_max_charge_w=_optional_float(settings.get("battery_max_charge_w")) or 5000.0,
+            battery_efficiency=_optional_float(settings.get("battery_efficiency")) or 0.92,
+            priority_soc=_optional_float(settings.get("priority_soc")) or 70.0,
+            buffer_soc=_optional_float(settings.get("buffer_soc")) or 40.0,
+            max_soc=_optional_float(settings.get("max_soc")) or 100.0,
+            reserve_power_w=float(options.get(CONF_RESERVE_POWER_W, DEFAULT_RESERVE_POWER_W)),
+            vehicle_soc=vehicle_soc,
+            vehicle_capacity_kwh=_vehicle_float(settings, "capacity_kwh"),
+            target_soc=_vehicle_float(settings, "target_soc_percent"),
+            vehicle_efficiency=_vehicle_float(settings, "charging_efficiency") or 0.9,
+            assumption=assumption,
+            min_power_w=limits.minimum_power_w,
+            max_power_w=limits.maximum_power_w,
+            always_charge=bool(settings.get("always_charge")),
+            use_price=settings.get("strategy") == "forecast_price",
+            prices=_price_series(self.hass, options, warnings),
+            learning=learning,
+            departure=departure,
+            limits=limits,
+        )
+        result.update(preview)
+
+    def _now(self) -> datetime:
+        """Use the Home Assistant time zone when it is configured."""
+        tzname = getattr(getattr(self.hass, "config", None), "time_zone", None)
+        if tzname:
+            try:
+                return datetime.now(ZoneInfo(str(tzname)))
+            except ZoneInfoNotFoundError:
+                pass
+        return datetime.now(UTC)
+
     def _read_optional_power(self, entity_id: str | None, warnings: list[str]) -> float | None:
         """Read an optional power entity."""
         if not entity_id:
             return 0.0
         return _read_power(self.hass, entity_id, warnings)
+
+
+def _stored_state(store: Any) -> tuple[dict[str, Any], dict[str, Any], list[Any]]:
+    """Return settings, learning and plans from the runtime store."""
+    if store is None:
+        return {}, {}, []
+    state = store.runtime.state
+    return dict(state.settings), dict(state.learning), list(state.plans)
+
+
+def _vehicle_soc(hass, options: dict[str, Any], settings: dict[str, Any], warnings: list[str]):
+    """Return the car SOC. Without a measurement the value stays an assumption."""
+    entity_id = options.get("vehicle_soc_sensor")
+    measured = _read_percent(hass, entity_id, []) if entity_id else None
+    connected = _read_binary(hass, options.get(CONF_WALLBOX_CONNECTED_SENSOR), warnings)
+    if measured is None:
+        stored = _vehicle_float(settings, "soc")
+        return stored if stored is not None else 50.0, True
+    return measured, connected is False
+
+
+def _vehicle_float(settings: dict[str, Any], key: str) -> float | None:
+    vehicle = settings.get("vehicle")
+    if not isinstance(vehicle, dict):
+        return None
+    return _optional_float(vehicle.get(key))
+
+
+def _departure(plans: list[Any], settings: dict[str, Any], now: datetime) -> datetime | None:
+    raw = None
+    if plans and isinstance(plans[0], dict):
+        raw = plans[0].get("departure")
+    if raw in {None, ""}:
+        raw = _vehicle_value(settings, "departure")
+    return parse_departure(raw, now)
+
+
+def _vehicle_value(settings: dict[str, Any], key: str) -> Any:
+    vehicle = settings.get("vehicle")
+    if not isinstance(vehicle, dict):
+        return None
+    return vehicle.get(key)
+
+
+def _price_series(hass, options: dict[str, Any], warnings: list[str]) -> list[float] | None:
+    entity_id = options.get("price_sensor")
+    if not entity_id:
+        return None
+    raw = _read_state_text(hass, entity_id, warnings)
+    if raw is None:
+        return None
+    values = parse_number_series(raw)
+    if values is None:
+        warnings.append(f"invalid_price:{entity_id}")
+    return values
+
+
+def _read_state_text(hass, entity_id: str, warnings: list[str]) -> str | None:
+    state = hass.states.get(entity_id)
+    if state is None or state.state in {"unknown", "unavailable", ""}:
+        warnings.append(f"unavailable:{entity_id}")
+        return None
+    return str(state.state)
+
+
+def _state_unit(hass, entity_id: str) -> str:
+    state = hass.states.get(entity_id)
+    if state is None:
+        return ""
+    return str(state.attributes.get("unit_of_measurement", ""))
+
+
+def _scale_power(values: list[float], unit: str) -> list[float] | None:
+    folded = unit.casefold()
+    if folded == "kw":
+        return [value * 1000 for value in values]
+    if folded == "mw":
+        return [value * 1_000_000 for value in values]
+    if folded not in {"", "w"}:
+        return None
+    return values
+
+
+def _read_percent(hass, entity_id: str | None, warnings: list[str]) -> float | None:
+    """Read a percentage. Missing entities stay empty instead of becoming zero."""
+    if not entity_id:
+        return None
+    raw = _read_state_text(hass, entity_id, warnings)
+    if raw is None:
+        return None
+    try:
+        value = float(raw)
+    except ValueError:
+        warnings.append(f"non_numeric:{entity_id}")
+        return None
+    if not math.isfinite(value) or not 0 <= value <= 100:
+        warnings.append(f"invalid_soc:{entity_id}")
+        return None
+    return value
+
+
+def _optional_float(value: Any) -> float | None:
+    if value is None or value == "":
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(number):
+        return None
+    return number
 
 
 def _wallbox_config(options: dict[str, Any]) -> WallboxControlConfig:

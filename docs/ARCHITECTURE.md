@@ -24,6 +24,7 @@ Home Assistant states
 - `forecast.py`: learning forecast calibration and corrected power series.
 - `optimizer.py`: charging window selection from forecast slots.
 - `preview.py`: day preview for battery priority, car target, buffer and price.
+- `day_preview.py`: turns a forecast series into today, tomorrow and the good/bad band.
 - `probe.py`: read-only entity status, raw value and normalized value.
 - `setup_draft.py`: step menu draft, JSON load and continuation rules.
 - `backup.py`: versioned JSON export, import, and schema migrations.

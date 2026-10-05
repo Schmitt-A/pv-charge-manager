@@ -143,6 +143,33 @@
       },
       "wallbox_action": {
         "name": "Wallbox-Aktion"
+      },
+      "chargeable_kwh_today": {
+        "name": "Ladbare Energie heute"
+      },
+      "chargeable_kwh_tomorrow": {
+        "name": "Ladbare Energie morgen"
+      },
+      "battery_full_at": {
+        "name": "Batterie voll"
+      },
+      "battery_full_at_early": {
+        "name": "Batterie voll, guter Fall"
+      },
+      "battery_full_at_late": {
+        "name": "Batterie voll, schlechter Fall"
+      },
+      "vehicle_full_at": {
+        "name": "Auto am Ziel"
+      },
+      "plan_status": {
+        "name": "Planstatus"
+      },
+      "minimum_power_today": {
+        "name": "Mindestleistung heute"
+      },
+      "battery_recommendation": {
+        "name": "Batterie-Empfehlung"
       }
     }
   }

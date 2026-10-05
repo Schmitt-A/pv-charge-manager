@@ -20,6 +20,7 @@ async def async_setup_entry(hass, entry) -> bool:
     await store.async_load()
 
     coordinator = PVChargeManagerCoordinator(hass, _LOGGER, entry)
+    coordinator.runtime_store = store
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
         "entry": entry,

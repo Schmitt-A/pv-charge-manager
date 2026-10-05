@@ -143,6 +143,33 @@
       },
       "wallbox_action": {
         "name": "Wallbox action"
+      },
+      "chargeable_kwh_today": {
+        "name": "Chargeable energy today"
+      },
+      "chargeable_kwh_tomorrow": {
+        "name": "Chargeable energy tomorrow"
+      },
+      "battery_full_at": {
+        "name": "Battery full"
+      },
+      "battery_full_at_early": {
+        "name": "Battery full, good case"
+      },
+      "battery_full_at_late": {
+        "name": "Battery full, bad case"
+      },
+      "vehicle_full_at": {
+        "name": "Vehicle at target"
+      },
+      "plan_status": {
+        "name": "Plan status"
+      },
+      "minimum_power_today": {
+        "name": "Minimum power today"
+      },
+      "battery_recommendation": {
+        "name": "Battery recommendation"
       }
     }
   }

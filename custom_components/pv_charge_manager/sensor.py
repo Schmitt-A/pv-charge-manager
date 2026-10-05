@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -46,7 +48,71 @@ SENSOR_DESCRIPTIONS = (
         key="wallbox_action",
         translation_key="wallbox_action",
     ),
+    SensorEntityDescription(
+        key="chargeable_kwh_today",
+        translation_key="chargeable_kwh_today",
+        native_unit_of_measurement="kWh",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="chargeable_kwh_tomorrow",
+        translation_key="chargeable_kwh_tomorrow",
+        native_unit_of_measurement="kWh",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="battery_full_at",
+        translation_key="battery_full_at",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    SensorEntityDescription(
+        key="battery_full_at_early",
+        translation_key="battery_full_at_early",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    SensorEntityDescription(
+        key="battery_full_at_late",
+        translation_key="battery_full_at_late",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    SensorEntityDescription(
+        key="vehicle_full_at",
+        translation_key="vehicle_full_at",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    SensorEntityDescription(
+        key="plan_status",
+        translation_key="plan_status",
+    ),
+    SensorEntityDescription(
+        key="minimum_power_today",
+        translation_key="minimum_power_today",
+    ),
+    SensorEntityDescription(
+        key="battery_recommendation",
+        translation_key="battery_recommendation",
+    ),
 )
+
+PREVIEW_KEYS = {
+    "chargeable_kwh_today",
+    "chargeable_kwh_tomorrow",
+    "battery_full_at",
+    "battery_full_at_early",
+    "battery_full_at_late",
+    "vehicle_full_at",
+    "plan_status",
+    "minimum_power_today",
+    "battery_recommendation",
+}
+TIMESTAMP_KEYS = {
+    "battery_full_at",
+    "battery_full_at_early",
+    "battery_full_at_late",
+    "vehicle_full_at",
+}
 
 
 async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback) -> None:
@@ -75,30 +141,40 @@ class PVChargeManagerSensor(CoordinatorEntity[PVChargeManagerCoordinator], Senso
         }
 
     @property
-    def native_value(self) -> float | str | None:
+    def native_value(self) -> float | str | datetime | None:
         """Return the latest calculated value."""
         if not self.coordinator.data:
             return None
-        return self.coordinator.data.get(self.entity_description.key)
+        value = self.coordinator.data.get(self.entity_description.key)
+        if self.entity_description.key in TIMESTAMP_KEYS and isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value)
+            except ValueError:
+                return None
+        return value
 
     @property
     def available(self) -> bool:
-        """Only publish recommendations when all required inputs are valid."""
+        """Keep surplus sensors unavailable without inputs. Preview sensors follow their own key."""
+        if not self.coordinator.last_update_success or not self.coordinator.data:
+            return False
         if self.entity_description.key == "wallbox_action":
-            return bool(self.coordinator.last_update_success and self.coordinator.data)
-        return bool(
-            self.coordinator.last_update_success
-            and self.coordinator.data
-            and self.coordinator.data.get("available")
-            and self.native_value is not None
-        )
+            return True
+        if self.entity_description.key in PREVIEW_KEYS:
+            return self.native_value is not None
+        return bool(self.coordinator.data.get("available") and self.native_value is not None)
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:
         """Expose diagnostics without putting them in the sensor state."""
         if not self.coordinator.data:
             return {}
-        return {
+        attributes: dict[str, object] = {
             "warnings": self.coordinator.data.get("warnings", []),
             "mapping": self.coordinator.data.get("mapping", {}),
         }
+        if self.entity_description.key in PREVIEW_KEYS:
+            meta = self.coordinator.data.get("preview_meta")
+            if isinstance(meta, dict):
+                attributes.update(meta)
+        return attributes
