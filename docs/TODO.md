@@ -1,6 +1,7 @@
 # Prioritized TODOs
 
 Agreed scope and coverage gaps: [FUNKTIONSPLAN.md](FUNKTIONSPLAN.md).
+Backup format: [BACKUP.md](BACKUP.md).
 
 ## P0 - Repository readiness
 
@@ -27,7 +28,7 @@ Agreed scope and coverage gaps: [FUNKTIONSPLAN.md](FUNKTIONSPLAN.md).
 - [x] Add fallback behavior for missing PV, grid, or wallbox state.
 - [x] Add service tests with mocked Home Assistant state.
 
-## P3 - Charge plan and preview
+## P3 - Charge plan, preview, and backup
 
 - [ ] Add the single vehicle profile and target SOC persistence.
 - [ ] Add modes, always charge, and solar share as entities.
@@ -40,6 +41,8 @@ Agreed scope and coverage gaps: [FUNKTIONSPLAN.md](FUNKTIONSPLAN.md).
 - [ ] Mark unplugged vehicle results as assumptions.
 - [ ] Add the minimum-power hint and zero-export diagnostic.
 - [ ] Add efficiency, minimum reserve, night reserve, and feasibility sensors.
+- [ ] Recommend car surplus only above priority SOC and battery support down to the buffer.
+- [ ] Add schema version 1 JSON export and import, with a migration test.
 - [ ] Keep inverter battery modes advisory until version 0.5.
 
 ## P4 - Battery strategy control
@@ -49,10 +52,12 @@ Agreed scope and coverage gaps: [FUNKTIONSPLAN.md](FUNKTIONSPLAN.md).
 - [ ] Stop grid charging at max SOC.
 - [ ] Add the balancing reminder.
 
-## P5 - Panel
+## P5 - Responsive panel
 
 - [ ] Add custom panel WebSocket commands.
-- [ ] Build the two-day forecast and charge-plan panel.
+- [ ] Build the phone and desktop energy-flow and two-day forecast view.
+- [ ] Add plan editing and backup download/upload in the panel.
+- [ ] Verify the main column at 360 pixels in light and dark theme.
 
 ## Backlog
 

@@ -13,6 +13,48 @@ Produktnamen fremder Lösungen werden in diesem Repository nicht verwendet.
 - Die Autorechnung läuft immer. Ohne verbundenes Fahrzeug oder ohne aktiven Plan ist sie als Annahme aus dem hinterlegten Profil markiert.
 - Unsichere Prognose wird als Band gezeigt: schlechter und guter Fall, daraus frühester und spätester Zeitpunkt.
 - Wirkungsgrad von Wallbox und Auto, Mindestreserve, Nulleinspeisung und der Hinweis auf Tage unter der Mindestleistung gehören in diesen Abschnitt.
+- Messwerte kommen nur aus Home-Assistant-Entitäten und Geräten. Es gibt keinen eigenen Gerätetreiber.
+- Die Oberfläche ist responsive. Backup und Restore laufen über eine versionierte JSON-Datei.
+
+## Datenquellen
+
+Alle Eingänge sind bestehende Home-Assistant-Entitäten:
+
+- Netzbezug und Einspeisung, Hauslast, PV-Leistung und PV-Energie je Quelle.
+- Batterie-SOC, Lade- und Entladeleistung, maximale Ladeleistung, optional Batteriemodi.
+- Prognose als Leistungs- oder Energiereihe, Preisreihe optional.
+- Wallbox: Laden-Schalter, Stromsollwert, Verbindungsstatus, optional Phasen und Sitzungsenergie.
+- Fahrzeug: SOC, optional Reichweite und Ladezustand.
+
+Nicht vorhandene Entitäten werden `unavailable` und blockieren die zugehörige Steuerung. Es werden keine Werte aus einem fremden Konto oder einem eigenen Protokoll gelesen.
+
+## Oberfläche
+
+Bis das Panel steht, sind alle Werte normale Home-Assistant-Entitäten und damit in Lovelace nutzbar.
+
+Das Panel ist eine eigene Sidebar-Ansicht und muss auf Telefon und Desktop funktionieren:
+
+- Energiefluss mit Netz, PV, Haus, Batterie und Wallbox.
+- Heute und morgen nebeneinander, auf schmalen Screens untereinander.
+- Zeitpunkt bis Batterie voll und bis Auto voll, Plan-Ziel und theoretisches Voll, gutes und schlechtes Band.
+- Prioritäts-SOC, Puffer und Mindestreserve als sichtbare Grenzen, nicht nur als Zahl.
+- Planeditor für Abfahrt, Ziel und Wochenplan.
+- Empfehlungen als Text: Überschuss ab Prioritäts-SOC, Entladung bis Puffergrenze, Nachtreserve.
+- Backup herunterladen und JSON wieder einlesen.
+- Touch-Ziele groß genug, keine feste Desktop-Breite, heller und dunkler Modus über das Home-Assistant-Theme.
+
+Das Panel hält keinen eigenen Ladestand. Es liest und schreibt nur über die Integration.
+
+## Backup
+
+Details stehen in [BACKUP.md](BACKUP.md).
+
+- Eine JSON-Datei mit `schema_version`.
+- Enthalten sind Einstellungen, Pläne, Entitätszuordnung und gelernte Prognosekorrektur.
+- Nicht enthalten sind Geheimnisse, Live-Werte und der aktuelle Wallbox-Sollwert.
+- Ältere Schema-Versionen werden beim Import migriert.
+- Neuere Schema-Versionen werden abgelehnt.
+- Fehlende Entitäten bleiben als fehlend markiert und werden nicht gelöscht.
 
 ## Funktionen des nächsten Abschnitts
 
@@ -25,6 +67,7 @@ Produktnamen fremder Lösungen werden in diesem Repository nicht verwendet.
 - SOC zwischen Abfragen schätzen und als Schätzung markieren.
 - Sitzungsenergie und PV-Anteil, sobald die Wallbox lädt.
 - Mehrere PV-Vergütungen bleiben über die vorhandene Opportunitätskosten-Zuteilung erhalten.
+- Export und Import der JSON-Sicherung, bevor das Panel existiert.
 
 ## Zwei-Tage-Vorschau
 
@@ -44,6 +87,7 @@ Getrennte Sensoren für heute und morgen. Morgen beginnt um Mitternacht.
 - Energie bis Prioritäts-SOC, bis Plan-Ziel und bis Max-SOC.
 - Zeit bis voll bei aktueller Ladeleistung und aus der Prognose.
 - SOC bis Sonnenuntergang, Autonomiestunden, erwarteter Morgen-SOC im guten und schlechten Fall.
+- Überschuss fürs Auto erst ab dem Prioritäts-SOC. Entladung der Hausbatterie nur bis zur Puffergrenze, als Empfehlung aus der Prognose.
 - Nachtreserve als Empfehlung, nicht als Schreibbefehl.
 - Roundtrip-Verlust, Standard 8 Prozent.
 - Balancing-Erinnerung, Boost-Energie und Entladesperre nur als Vorschlag.
@@ -60,6 +104,7 @@ Berücksichtigt:
 - Ladeplan, Wochenplan, spätes Laden, Preis als zuschaltbare Strategie.
 - Batteriepriorität, Puffer, Boost, Entladesperre, Netzladung, Nachtreserve, Balancing, Max-SOC.
 - Zwei-Tage-Vorschau, Band, Wirkungsgrad, Mindestreserve, Nulleinspeisung, Mindestleistungs-Hinweis.
+- Entitäten als einzige Datenquelle, responsive Oberfläche, versioniertes JSON-Backup.
 
 Bewusst nicht im nächsten Abschnitt:
 
@@ -67,12 +112,13 @@ Bewusst nicht im nächsten Abschnitt:
 - Zweite Wallbox, Priorität zwischen Ladepunkten, Stromkreise, externe Leistungsgrenze.
 - CO2-Optimierung.
 - Hausoptimierer, der Batterie, Auto und Heizung selbst steuert.
-- Eigenes Panel, Fernzugriff, eigener Gerätekatalog.
+- Fernzugriff und eigener Gerätekatalog.
 
 Nur vorgemerkt, noch nicht geschaltet:
 
 - Entladesperre, Netzladung, Boost und Puffer schreiben noch nicht an den Wechselrichter.
 - Der Wallbox-Controller bekommt in diesem Abschnitt nur den bisherigen Überschussollwert.
+- Das Panel folgt nach den Sensoren und dem Backup-Dienst.
 
 Für eine Wallbox noch offen:
 
@@ -91,3 +137,5 @@ Für eine Wallbox noch offen:
 - Ein Tag unter der Mindestleistung setzt den Hinweis und keine Uhrzeit.
 - Ein unerreichbares Ziel setzt den Planstatus auf nicht machbar und löst keine stille Netzladung aus.
 - Wallbox-Steuerung bleibt aus, bis Laden-Schalter, Stromzahl und Verbindungsstatus gemappt sind.
+- Ein Backup der Schema-Version 1 lässt sich nach einer späteren Migration wieder einlesen.
+- Die Panel-Ansicht ist bei 360 Pixel Breite ohne horizontales Scrollen der Hauptspalte bedienbar.

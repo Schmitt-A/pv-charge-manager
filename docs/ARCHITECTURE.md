@@ -28,6 +28,7 @@ Home Assistant states
 - `sensor.py`: first read-only calculated sensors from coordinator state.
 - platform files: future binary sensors, numbers, selects, switches, and buttons.
 - `websocket.py`: future bridge for the custom frontend panel.
+- `backup.py`: versioned JSON export, import, and schema migrations.
 
 ## Runtime model
 
@@ -48,12 +49,14 @@ The calculation layer then produces:
 
 ```text
 available surplus power
-recommended charge current
-  recommended charge current and power
-  expected opportunity cost
-  wallbox control decision
-  diagnostic warnings
+recommended charge current and power
+expected opportunity cost
+wallbox control decision
+diagnostic warnings
 ```
+
+Inputs come only from Home Assistant entities and devices. The integration does
+not open its own device protocol or account session.
 
 ## Economic allocation
 
@@ -99,7 +102,8 @@ by PV system, season, weather class, and time of day so morning, noon, and eveni
 errors can be corrected differently.
 
 Charge planning must consume the corrected forecast, not the raw forecast, once
-enough historic observations are available.
+enough historic observations are available. Learned factors are part of the JSON
+backup.
 
 ## Safety boundaries
 
@@ -115,9 +119,17 @@ control logic needs these guardrails:
 
 ## Frontend strategy
 
-The first usable UI should be the Home Assistant config/options flow plus normal
-entities. A custom panel should be added only after the backend model is stable.
-The panel should use the WebSocket API and never own core charging state itself.
+Entities remain the first usable interface. The custom panel is a responsive
+sidebar view for phone and desktop: energy flow, two-day preview, plan editor,
+and backup actions. It uses the WebSocket API and never owns core charging state.
+Layout follows the Home Assistant theme, stacks on narrow screens, and keeps the
+main column usable at 360 pixels.
+
+## Backup
+
+`backup.py` exports and imports one JSON document keyed by `schema_version`.
+Older schemas migrate forward. Newer schemas are rejected. Secrets and live
+measurements are not included. See [BACKUP.md](BACKUP.md).
 
 ## Wallbox control boundary
 

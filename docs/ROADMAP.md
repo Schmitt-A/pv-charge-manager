@@ -1,9 +1,10 @@
 # Roadmap
 
-The agreed scope is one wallbox, one home battery, and one vehicle. Heating,
-smart plugs, heat pumps, and extra charge points are out of the next slice.
-Battery strategy is calculated now and applied to the inverter only in a later
-version. See [FUNKTIONSPLAN.md](FUNKTIONSPLAN.md).
+The agreed scope is one wallbox, one home battery, and one vehicle. Measurements
+come only from Home Assistant entities and devices. Heating, smart plugs, heat
+pumps, and extra charge points are out of the next slice. Battery strategy is
+calculated now and applied to the inverter only in a later version. See
+[FUNKTIONSPLAN.md](FUNKTIONSPLAN.md).
 
 ## Version 0.1 - Energy monitor
 
@@ -47,6 +48,7 @@ Goal: one vehicle profile and a charge plan, without new inverter writes.
 - selectable strategy: forecast only, or forecast plus dynamic price
 - continuous block, or cheapest slots when a price series exists
 - session energy and PV share
+- JSON backup export and import for schema version 1
 
 ## Version 0.4 - Forecast preview
 
@@ -61,6 +63,8 @@ the selected target.
 - unplugged car preview marked as an assumption
 - minimum-power hint: possible, brief, or never
 - zero-export balance fallback and minimum battery reserve
+- surplus-to-car recommendation only above priority SOC
+- battery-support recommendation down to the buffer limit
 - night-reserve recommendation and morning SOC
 - target-time feasibility, including the bad forecast case
 - household consumption baseline
@@ -76,14 +80,17 @@ required services.
 - balancing reminder
 - no write when the inverter capability is unknown
 
-## Version 0.6 - Custom UI
+## Version 0.6 - Responsive panel
 
-Goal: Home Assistant sidebar panel for configuration and operation.
+Goal: a phone and desktop sidebar panel. It does not own charging state.
 
-- overview page
-- energy flow view
-- two-day forecast page with the good and bad band
+- energy flow for grid, PV, home, battery, and wallbox
+- two-day forecast with the good and bad band
+- visible priority, buffer, and reserve limits
 - vehicle and charge plan editor
+- recommendation text for surplus start and battery support
+- backup download and JSON upload
+- stacked layout at 360 pixels, Home Assistant light and dark theme
 - diagnostics page with the decision reason
 - WebSocket commands
 
