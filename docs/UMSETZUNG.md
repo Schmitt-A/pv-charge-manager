@@ -19,10 +19,10 @@ Bereits verdrahtet:
 - [__init__.py](../custom_components/pv_charge_manager/__init__.py) lädt den Store vor dem Coordinator, registriert `export_backup`, `import_backup` und `recalculate` und hängt das Panel in die Seitenleiste. `start_boost` schreibt nur eine Warnung.
 - [panel.py](../custom_components/pv_charge_manager/panel.py) baut die Übersicht aus dem Coordinator-Stand und dem Store. [frontend/pv-charge-manager.js](../custom_components/pv_charge_manager/frontend/pv-charge-manager.js) zeigt Satz, Fluss, zwei Tageskarten, die Regler, die Probe-Hinweise und die JSON-Schaltflächen. Der Browser rechnet keinen Plan. `websocket.py` liefert den Snapshot und speichert eine Regleränderung.
 - [balance.py](../custom_components/pv_charge_manager/balance.py) erkennt Nulleinspeisung und sagt, ob die Nachtreserve bis morgens reicht. Wirkungsgrad und Mindestreserve stehen als Attribute daran. Der Wallbox-Sollwert bleibt `recommended_current_a`.
+- [forecast_log.py](../custom_components/pv_charge_manager/forecast_log.py) speichert je abgeschlossenem Tag eine Prognoseprobe. Unter einer Stunde oder ohne Prognose bleibt der Tag ungültig. Unter sieben Proben bleibt der Faktor 1.
 
 Vorhanden, aber nicht angeschlossen:
 
-- `ForecastCalibration` sammelt noch keine neuen Stichproben. Der Coordinator wendet nur einen bereits gespeicherten Faktor an, und erst ab sieben Proben.
 - `binary_sensor.py` ist ein leerer Platzhalter.
 - Es gibt einen gemeinsamen Einspeisetarif, keine Tarife je PV-Quelle.
 

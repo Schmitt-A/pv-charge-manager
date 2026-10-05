@@ -56,6 +56,7 @@ from .day_preview import (
     parse_number_series,
     sum_series,
 )
+from .forecast_log import record_forecast
 from .wallbox import (
     WallboxAction,
     WallboxControlConfig,
@@ -158,7 +159,7 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         if not available:
             await self._update_wallbox(result, options, warnings)
-            return self._finish(result, warnings)
+            return await self._publish(result, warnings)
 
         try:
             limits = ChargeLimits(
@@ -182,7 +183,7 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             result["available"] = False
             warnings.append(f"invalid_limits:{err}")
             await self._update_wallbox(result, options, warnings)
-            return self._finish(result, warnings)
+            return await self._publish(result, warnings)
 
         result.update(
             {
@@ -202,7 +203,7 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             }
         )
         await self._update_wallbox(result, options, warnings)
-        return self._finish(result, warnings)
+        return await self._publish(result, warnings)
 
     async def _update_wallbox(
         self,
@@ -368,6 +369,35 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         result.pop("_forecast_w", None)
         return result
 
+    async def _publish(self, result: dict[str, Any], warnings: list[str]) -> dict[str, Any]:
+        """Finish the snapshot, then store a forecast sample without touching the setpoint."""
+        finished = self._finish(result, warnings)
+        await self._persist_learning(finished)
+        return finished
+
+    async def _persist_learning(self, result: dict[str, Any]) -> None:
+        """Record the open forecast day. A missing store leaves the result unchanged."""
+        try:
+            store = getattr(self, "runtime_store", None)
+            learning = None if store is None else store.runtime.state.learning
+            if isinstance(learning, dict):
+                before = result.get("recommended_current_a")
+                changed = record_forecast(
+                    learning,
+                    now=self._now(),
+                    pv_w=result.get("pv_power_w"),
+                    hour_forecast_w=result.get("_hour_forecast_w"),
+                )
+                result["recommended_current_a"] = before
+                if changed:
+                    await store.async_save()
+        except (TypeError, ValueError, OverflowError, OSError) as err:
+            warnings = list(result.get("warnings") or [])
+            warnings.append(f"learning_not_saved:{err}")
+            result["warnings"] = sorted(set(warnings))
+        finally:
+            result.pop("_hour_forecast_w", None)
+
     def _attach_flow(self, result: dict[str, Any]) -> None:
         """Remember live watts for the panel. These values do not change the setpoint."""
         options = self.entry.options
@@ -472,6 +502,7 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         departure = _departure(plans, settings, now)
         forecast_w = sum_series(series)
         result["_forecast_w"] = forecast_w
+        result["_hour_forecast_w"] = forecast_w[0] if forecast_w else None
         preview = build_day_preview(
             forecast_w=forecast_w,
             home_w=float(home_w),

@@ -22,6 +22,7 @@ Home Assistant states
 - `calculation.py`: surplus power, current conversion, vehicle energy demand.
 - `allocation.py`: balance-sheet allocation of PV sources by feed-in tariff.
 - `forecast.py`: learning forecast calibration and corrected power series.
+- `forecast_log.py`: one closed day becomes a forecast sample. It does not write the wallbox.
 - `optimizer.py`: charging window selection from forecast slots.
 - `preview.py`: day preview for battery priority, car target, buffer and price.
 - `day_preview.py`: turns a forecast series into today, tomorrow and the good/bad band.
