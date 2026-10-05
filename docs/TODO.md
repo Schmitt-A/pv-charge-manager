@@ -1,5 +1,7 @@
 # Prioritized TODOs
 
+Agreed scope and coverage gaps: [FUNKTIONSPLAN.md](FUNKTIONSPLAN.md).
+
 ## P0 - Repository readiness
 
 - [x] Add Codex instructions.
@@ -25,21 +27,41 @@
 - [x] Add fallback behavior for missing PV, grid, or wallbox state.
 - [x] Add service tests with mocked Home Assistant state.
 
-## P3 - Planning and UI
+## P3 - Charge plan and preview
 
-- [ ] Add vehicle profiles and target SOC persistence.
-- [ ] Add charge plan entity model.
-- [ ] Add forecast optimizer using corrected real forecast slots.
-- [ ] Persist historic forecast-vs-actual observations.
-- [ ] Expose learned forecast correction factor per PV source.
-- [ ] Connect forecast observations to the coordinator and charge-plan inputs.
+- [ ] Add the single vehicle profile and target SOC persistence.
+- [ ] Add modes, always charge, and solar share as entities.
+- [ ] Add departure, weekly schedule, and late-charging window.
+- [ ] Add selectable forecast-only and forecast-plus-price strategies.
+- [ ] Persist historic forecast-vs-actual observations per PV source.
+- [ ] Expose learned correction and the good/bad band.
+- [ ] Add today and tomorrow chargeable-energy sensors.
+- [ ] Add battery and vehicle full times for plan target and theoretical full.
+- [ ] Mark unplugged vehicle results as assumptions.
+- [ ] Add the minimum-power hint and zero-export diagnostic.
+- [ ] Add efficiency, minimum reserve, night reserve, and feasibility sensors.
+- [ ] Keep inverter battery modes advisory until version 0.5.
+
+## P4 - Battery strategy control
+
+- [ ] Map optional inverter services for hold, discharge lock, and grid charge.
+- [ ] Apply priority SOC, buffer, and boost only when those services exist.
+- [ ] Stop grid charging at max SOC.
+- [ ] Add the balancing reminder.
+
+## P5 - Panel
+
 - [ ] Add custom panel WebSocket commands.
-- [ ] Build first operational Home Assistant panel.
+- [ ] Build the two-day forecast and charge-plan panel.
 
 ## Backlog
 
 - [ ] HACS release automation.
-- [ ] Dynamic tariff source support.
-- [ ] Multi-vehicle queueing.
+- [ ] 1/3 phase switching and site export offset.
+- [ ] Vehicle wakeup and range sensor.
+- [ ] Grid-fee adders and fixed time-window prices.
+- [ ] Multiple home batteries and export-to-grid mode.
+- [ ] Statistics beyond the current session.
 - [ ] Historical forecast correction by season, weather class, weekday, and time of day.
+- [ ] Heating, extra charge points, circuit limits, and CO2 optimization.
 - [ ] Documentation screenshots once the UI exists.

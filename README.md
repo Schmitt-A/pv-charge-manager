@@ -1,9 +1,9 @@
 # PV Charge Manager
 
 PV Charge Manager is a Home Assistant custom integration for PV-aware EV
-charging. It is planned as a focused alternative to EVCC for one specific Home
-Assistant installation with multiple PV systems, different feed-in tariffs,
-solar forecast data, a battery, wallbox control, and vehicle charging plans.
+charging. It is built for one Home Assistant installation with multiple PV
+systems, different feed-in tariffs, solar forecast data, a home battery, one
+wallbox, and one vehicle charge plan.
 
 Repository: <https://github.com/Schmitt-A/pv-charge-manager>
 
@@ -30,9 +30,12 @@ Implemented now:
 
 Planned next:
 
-- vehicle profiles and target SOC persistence
-- persistent forecast observations per PV source
-- custom Home Assistant frontend panel
+- one vehicle profile, charge plan, and selectable forecast or price strategy
+- today and tomorrow preview, including full times and a good/bad forecast band
+- battery strategy as advisory sensors before any inverter writes
+
+The agreed scope, the preview rules, and the coverage gaps are documented in
+[docs/FUNKTIONSPLAN.md](docs/FUNKTIONSPLAN.md).
 
 ## Installation for Home Assistant
 
@@ -148,6 +151,7 @@ docs/
   ARCHITECTURE.md
   CONFIGURATION.md
   DEVELOPMENT.md
+  FUNKTIONSPLAN.md
   ROADMAP.md
   TODO.md
 examples/
@@ -182,6 +186,7 @@ optimization. Persisting observations per PV source is a later roadmap item.
 
 ## Documentation
 
+- [Function plan](docs/FUNKTIONSPLAN.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Configuration model](docs/CONFIGURATION.md)
 - [Development guide](docs/DEVELOPMENT.md)
