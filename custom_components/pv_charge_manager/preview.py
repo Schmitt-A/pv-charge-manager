@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from .schedule import grid_window_open, schedule_open
+
 CHEAP_EUR = 0.12
 STEP = timedelta(minutes=15)
 
@@ -45,6 +47,8 @@ class PreviewConfig:
     cheap_eur: float = CHEAP_EUR
     car_enabled: bool = True
     force_max: bool = False
+    week: dict | None = None
+    late_hours: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,9 +95,12 @@ def simulate_case(slots: list[PreviewSlot], config: PreviewConfig, factor: float
         while cursor < slot.end:
             nxt = min(cursor + STEP, slot.end)
             hours = (nxt - cursor).total_seconds() / 3600
-            car_allowed = config.car_enabled and (
-                config.departure is None or cursor < config.departure
+            car_allowed = (
+                config.car_enabled
+                and schedule_open(cursor, config.week)
+                and (config.departure is None or cursor < config.departure)
             )
+            grid_open = grid_window_open(cursor, config.departure, config.late_hours)
             if surplus_w >= threshold:
                 above_min_hours += hours
             chargeable += (surplus_w / 1000) * hours
@@ -113,11 +120,11 @@ def simulate_case(slots: list[PreviewSlot], config: PreviewConfig, factor: float
             from_grid = 0.0
             if car_allowed and vehicle < target - 0.001:
                 desired = from_surplus
-                if config.always_charge:
+                if config.always_charge and grid_open:
                     desired = max(desired, config.min_power_w)
-                if cheap and stored >= priority - 0.02:
+                if cheap and grid_open and stored >= priority - 0.02:
                     desired = config.max_power_w
-                if config.force_max:
+                if config.force_max and grid_open:
                     desired = config.max_power_w
                 extra = max(0.0, desired - from_surplus)
                 if extra > 0 and battery_charge_w == 0 and stored > buffer + 0.001:

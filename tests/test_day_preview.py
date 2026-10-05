@@ -125,3 +125,53 @@ def test_departure_keeps_the_plan_inside_the_window() -> None:
     blocked = _preview(departure=soon, forecast_w=[11000.0] * 8, battery_soc=80, priority_soc=70)
     open_plan = _preview(forecast_w=[11000.0] * 8, battery_soc=80, priority_soc=70)
     assert blocked["preview_meta"]["vehicle_kwh"] < open_plan["preview_meta"]["vehicle_kwh"]
+
+
+def test_tuesday_schedule_blocks_the_car() -> None:
+    closed = _preview(
+        week={"mo": {"start": "00:00", "end": "23:59"}},
+        battery_soc=90,
+        priority_soc=50,
+        forecast_w=[11000.0] * 6,
+    )
+    open_plan = _preview(battery_soc=90, priority_soc=50, forecast_w=[11000.0] * 6)
+    assert closed["preview_meta"]["vehicle_kwh"] == 0
+    assert open_plan["preview_meta"]["vehicle_kwh"] > 0
+
+
+def test_late_window_keeps_a_cheap_hour_off_the_grid() -> None:
+    shared = {
+        "forecast_w": [0.0] * 4,
+        "use_price": True,
+        "prices": [0.05] * 4,
+        "battery_soc": 80,
+        "priority_soc": 70,
+        "departure": NOW + timedelta(hours=12),
+    }
+    blocked = _preview(late_hours=2, **shared)
+    open_plan = _preview(**shared)
+    assert blocked["preview_meta"]["grid_kwh"] == 0
+    assert open_plan["preview_meta"]["grid_kwh"] > 0
+
+
+def test_a_trusted_source_replaces_the_site_factor() -> None:
+    site = _preview(forecast_w=[5000.0] * 4, learning={"factor": 1.0, "samples": 7})
+    sourced = _preview(
+        forecast_w=[5000.0] * 4,
+        learning={
+            "factor": 1.0,
+            "samples": 7,
+            "sources": {"sensor.dach": {"factor": 0.8, "samples": 7}},
+        },
+    )
+    ignored = _preview(
+        forecast_w=[5000.0] * 4,
+        learning={
+            "factor": 1.2,
+            "samples": 7,
+            "sources": {"sensor.dach": {"factor": 0.8, "samples": 6}},
+        },
+    )
+    assert sourced["preview_meta"]["learned_factor"] == 0.8
+    assert sourced["chargeable_kwh_today"] < site["chargeable_kwh_today"]
+    assert ignored["preview_meta"]["learned_factor"] == 1.2

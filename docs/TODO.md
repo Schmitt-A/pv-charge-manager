@@ -25,7 +25,7 @@ Backup format: [BACKUP.md](BACKUP.md).
 - [x] Define wallbox adapter abstraction for Home Assistant entities.
 - [x] Add current limit validation.
 - [x] Add start/stop debounce and minimum runtime.
-- [ ] Add cloud smoothing filter for forecast/current fluctuations.
+- [x] Add cloud smoothing filter for forecast/current fluctuations. The published surplus current stays raw; only the wallbox command is smoothed.
 - [x] Add fallback behavior for missing PV, grid, or wallbox state.
 - [x] Add service tests with mocked Home Assistant state.
 
@@ -37,10 +37,10 @@ Backup format: [BACKUP.md](BACKUP.md).
 - [x] Allow JSON save and load on every step, then retest after load.
 - [x] Add the single vehicle profile and target SOC persistence.
 - [x] Add modes, always charge, and solar share as entities.
-- [ ] Add departure, weekly schedule, and late-charging window.
+- [x] Add departure, weekly schedule, and late-charging window.
 - [x] Add selectable forecast-only and forecast-plus-price strategies.
 - [x] Persist a daily forecast-versus-actual sample for the summed PV power.
-- [ ] Split the learned forecast factor by PV source.
+- [x] Split the learned forecast factor by PV source. A source applies only after seven samples; otherwise the site factor remains.
 - [x] Expose learned correction and the good/bad band.
 - [x] Add today and tomorrow chargeable-energy sensors.
 - [x] Add battery and vehicle full times for plan target and theoretical full.
@@ -49,22 +49,22 @@ Backup format: [BACKUP.md](BACKUP.md).
 - [x] Add efficiency, minimum reserve, night reserve, and feasibility sensors.
 - [x] Recommend car surplus only above priority SOC and battery support down to the buffer.
 - [x] Add schema version 1 JSON export and import, with a migration test.
-- [ ] Keep inverter battery modes advisory until version 0.5.
+- [ ] Keep inverter battery modes advisory until version 0.5. The battery is evaluated, not switched.
 
 ## P4 - Battery strategy control
 
 - [ ] Map optional inverter services for hold, discharge lock, and grid charge.
 - [ ] Apply priority SOC, buffer, and boost only when those services exist.
 - [ ] Stop grid charging at max SOC.
-- [ ] Add the balancing reminder.
+- [x] Add the balancing reminder. Text only. It does not write to the inverter.
 
 ## P5 - Responsive panel
 
 - [x] Add custom panel WebSocket commands.
 - [x] Build the phone and desktop energy-flow and two-day forecast view.
-- [ ] Move the step menu into the panel. JSON save and load are already there.
-- [ ] Add weekly plan editing in the panel. Departure can already be stored.
-- [ ] Verify the main column at 360 pixels in a running Home Assistant.
+- [ ] Move the step menu into the panel. JSON save and load are already there. The panel only shows the saved step name.
+- [x] Add weekly plan editing in the panel. Departure can already be stored.
+- [ ] Verify the main column at 360 pixels in a running Home Assistant. The stylesheet stays one column below 720 pixels.
 
 ## Backlog
 

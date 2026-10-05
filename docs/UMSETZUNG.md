@@ -4,22 +4,23 @@ Stand: 2026-10-05. Dieser Plan beschreibt die nächsten Codeänderungen. Der fac
 
 Jeder Schritt ist ein eigener Commit, bleibt ohne Home Assistant lauffähig testbar, und ändert die Wallbox-Entscheidung erst, wenn die neuen Sensoren stimmen.
 
-Schritte 1 bis 7 sind umgesetzt. Der Wallbox-Sollwert bleibt `recommended_current_a`. Offen sind danach nur noch die Punkte unter „Ausdrücklich später“ und die nicht abgehakten Einträge in [TODO.md](TODO.md).
+Schritte 1 bis 7 sind umgesetzt. Danach sind Wochenplan, spätes Netzfenster, ein Lernfaktor je PV-Quelle, der Wallbox-Befehl nach Modus und Plan, die Glättung nur dieses Befehls und der Zellenausgleich als Text verdrahtet. Der Sensor `recommended_current_a` bleibt der reine Überschuss. Der Wechselrichter wird nicht geschrieben. Offen bleiben die nicht abgehakten Einträge in [TODO.md](TODO.md).
 
 ## Ist-Stand
 
 Bereits verdrahtet:
 
 - [config_flow.py](../custom_components/pv_charge_manager/config_flow.py) legt nur den Namen an. Die Optionen laufen in den Schritten `site`, `pv`, `battery`, `forecast`, `wallbox`, `vehicle` und `review`. Jeder Schritt prüft die zugeordneten Entitäten, zeigt Rohwert und normalisierten Wert und kann JSON laden oder speichern. Die Prüfung schreibt nicht an Wallbox oder Wechselrichter.
-- [coordinator.py](../custom_components/pv_charge_manager/coordinator.py) liest PV, Hauslast, Batterieladeleistung und Wallbox. Er rechnet Überschuss, Strom, Leistung und Opportunitätskosten. Liegt eine lesbare Prognose vor, hängt er die Tagesvorschau an: heute, morgen, Vollladezeiten im guten und schlechten Fall, Planstatus und die Batterie-Empfehlung. Unter sieben Lernproben bleibt der Faktor 1. Die Wallbox wird nur bei `wallbox_control_enabled` geschrieben. Der Sollwert bleibt `recommended_current_a`.
-- [sensor.py](../custom_components/pv_charge_manager/sensor.py) veröffentlicht Überschuss, Sollwert und die Tagesvorschau.
+- [coordinator.py](../custom_components/pv_charge_manager/coordinator.py) liest PV, Hauslast, Batterieladeleistung und Wallbox. Er rechnet Überschuss, Strom, Leistung und Opportunitätskosten. Liegt eine lesbare Prognose vor, hängt er die Tagesvorschau an, inklusive Wochenplan und spätem Netzfenster. Unter sieben Lernproben bleibt der Faktor 1. Vertrauenswürdige PV-Quellen ersetzen den Standortfaktor durch ihren Mittelwert. Die Wallbox wird nur bei `wallbox_control_enabled` geschrieben. Der veröffentlichte Sollwert bleibt `recommended_current_a`. Der Befehl folgt Modus, Wochenplan, spätem Fenster und Immer laden und wird geglättet. Der erste Messwert geht unverändert durch.
+- [sensor.py](../custom_components/pv_charge_manager/sensor.py) veröffentlicht Überschuss, Sollwert, die Tagesvorschau und den Zellenausgleich.
 - [calculation.py](../custom_components/pv_charge_manager/calculation.py), [forecast.py](../custom_components/pv_charge_manager/forecast.py), [optimizer.py](../custom_components/pv_charge_manager/optimizer.py), [preview.py](../custom_components/pv_charge_manager/preview.py), [backup.py](../custom_components/pv_charge_manager/backup.py), [probe.py](../custom_components/pv_charge_manager/probe.py), [setup_draft.py](../custom_components/pv_charge_manager/setup_draft.py) und [wallbox.py](../custom_components/pv_charge_manager/wallbox.py) sind reine Module mit Tests.
 - [storage.py](../custom_components/pv_charge_manager/storage.py) hält Fahrzeug, Plan, Lernzustand und den Backup-Entwurf unter `pv_charge_manager.{entry_id}`.
 - [controls.py](../custom_components/pv_charge_manager/controls.py) prüft Modus, Strategie, Solaranteil, Ziel, Priorität, Puffer, Mindestreserve, Preisgrenze und Immer laden. Die Werte liegen im Store. `select.py`, `number.py`, `switch.py` und `button.py` speichern sie und rechnen neu. Die Wallbox-Steuerung bleibt in den Optionen. Der Sollwert bleibt `recommended_current_a`. Aus lädt das Auto in der Vorschau nicht. Sofort nimmt die volle Leistung. Der Solaranteil ändert die Mindestleistungs-Schwelle. Die Preisgrenze entscheidet, welche Stunde günstig ist.
 - [__init__.py](../custom_components/pv_charge_manager/__init__.py) lädt den Store vor dem Coordinator, registriert `export_backup`, `import_backup` und `recalculate` und hängt das Panel in die Seitenleiste. `start_boost` schreibt nur eine Warnung.
-- [panel.py](../custom_components/pv_charge_manager/panel.py) baut die Übersicht aus dem Coordinator-Stand und dem Store. [frontend/pv-charge-manager.js](../custom_components/pv_charge_manager/frontend/pv-charge-manager.js) zeigt Satz, Fluss, zwei Tageskarten, die Regler, die Probe-Hinweise und die JSON-Schaltflächen. Der Browser rechnet keinen Plan. `websocket.py` liefert den Snapshot und speichert eine Regleränderung.
-- [balance.py](../custom_components/pv_charge_manager/balance.py) erkennt Nulleinspeisung und sagt, ob die Nachtreserve bis morgens reicht. Wirkungsgrad und Mindestreserve stehen als Attribute daran. Der Wallbox-Sollwert bleibt `recommended_current_a`.
-- [forecast_log.py](../custom_components/pv_charge_manager/forecast_log.py) speichert je abgeschlossenem Tag eine Prognoseprobe. Unter einer Stunde oder ohne Prognose bleibt der Tag ungültig. Unter sieben Proben bleibt der Faktor 1.
+- [panel.py](../custom_components/pv_charge_manager/panel.py) baut die Übersicht aus dem Coordinator-Stand und dem Store. [frontend/pv-charge-manager.js](../custom_components/pv_charge_manager/frontend/pv-charge-manager.js) zeigt Satz, Fluss, zwei Tageskarten, die Regler, Abfahrt, spätes Fenster, Wochenplan, die Probe-Hinweise und die JSON-Schaltflächen. Der Browser rechnet keinen Plan. Die Entitätszuordnung bleibt im Optionsfluss. Der gespeicherte Schritt wird nur angezeigt.
+- [balance.py](../custom_components/pv_charge_manager/balance.py) erkennt Nulleinspeisung und sagt, ob die Nachtreserve bis morgens reicht. Der Zellenausgleich ist ein Satz und schreibt nicht an den Wechselrichter. Der Wallbox-Sensor bleibt `recommended_current_a`.
+- [forecast_log.py](../custom_components/pv_charge_manager/forecast_log.py) speichert je abgeschlossenem Tag eine Prognoseprobe für die Summe und, wenn die Messung da ist, je PV-Quelle. Unter einer Stunde oder ohne Prognose bleibt der Tag ungültig. Unter sieben Proben bleibt der Faktor 1.
+- [schedule.py](../custom_components/pv_charge_manager/schedule.py) hält den Wochenplan. Ein leerer Plan ist immer offen. Ein eingetragener Tag schließt die anderen. Das späte Fenster sperrt nur Netz, Immer laden und Sofort, nicht den Überschuss.
 
 Vorhanden, aber nicht angeschlossen:
 
@@ -143,8 +144,8 @@ Layout: eine Spalte unter 360 Pixel, Home-Assistant-Theme, keine eigene Farbwelt
 
 Nicht in Schritt 1 bis 7:
 
-- Schreiben von Entladesperre, Netzladung, Boost oder Puffer an den Wechselrichter.
-- Änderung der Wallbox-Sollwertlogik.
+- Schreiben von Entladesperre, Netzladung, Boost oder Puffer an den Wechselrichter. Die Hausbatterie wird bewertet, nicht geschaltet.
+- Änderung der Überschussformel von `recommended_current_a`. Der Befehl an die Wallbox folgt Modus, Wochenplan, spätem Fenster und Immer laden.
 - Heizstab, zweite Wallbox, CO2, Phasenwechsel.
 - Mehrere Tarife je PV-Quelle. Das vorhandene eine Tariffeld bleibt, bis `allocation.py` je Quelle einen Tarif aus den Optionen bekommt.
 

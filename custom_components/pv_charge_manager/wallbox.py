@@ -69,6 +69,8 @@ class WallboxState:
     inputs_available: bool
     recommended_current_a: float | None
     manual_override: bool = False
+    mode: str = "smart"
+    schedule_open: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,13 +107,24 @@ class WallboxController:
                 return WallboxDecision(WallboxAction.STOP, None, "vehicle_disconnected")
             return WallboxDecision(WallboxAction.HOLD, None, "vehicle_disconnected")
 
+        if state.mode == "off" or not state.schedule_open:
+            reason = "mode_off" if state.mode == "off" else "outside_schedule"
+            self._pending_start_at = None
+            if state.charging:
+                return self._stop_decision(state.now, reason)
+            self._clear_pending()
+            return WallboxDecision(WallboxAction.HOLD, None, reason)
+
         if not state.inputs_available:
             self._pending_start_at = None
             if state.charging and self.config.fallback_stop:
                 return self._stop_decision(state.now, "required_input_unavailable")
             return WallboxDecision(WallboxAction.HOLD, None, "required_input_unavailable")
 
-        target_current_a = self.config.normalize_current_a(state.recommended_current_a)
+        if state.mode == "now":
+            target_current_a = self.config.normalize_current_a(self.config.maximum_current_a)
+        else:
+            target_current_a = self.config.normalize_current_a(state.recommended_current_a)
         if target_current_a == 0:
             self._pending_start_at = None
             if state.charging:
@@ -169,3 +182,14 @@ class WallboxController:
         self._pending_start_at = None
         self._pending_stop_at = None
         self._session_started_at = None
+
+
+def smooth_current(
+    previous: float | None, sample: float | None, alpha: float = 0.35
+) -> float | None:
+    """Ease the commanded current. The first sample passes through unchanged."""
+    if sample is None:
+        return None
+    if previous is None:
+        return round(float(sample), 3)
+    return round(previous + alpha * (float(sample) - previous), 3)

@@ -9,6 +9,7 @@ from custom_components.pv_charge_manager.wallbox import (
     WallboxControlConfig,
     WallboxController,
     WallboxState,
+    smooth_current,
 )
 
 
@@ -21,6 +22,8 @@ def make_state(
     inputs_available: bool = True,
     recommended_current_a: float | None = 10.0,
     manual_override: bool = False,
+    mode: str = "smart",
+    schedule_open: bool = True,
 ) -> WallboxState:
     return WallboxState(
         now=now,
@@ -30,6 +33,8 @@ def make_state(
         inputs_available=inputs_available,
         recommended_current_a=recommended_current_a,
         manual_override=manual_override,
+        mode=mode,
+        schedule_open=schedule_open,
     )
 
 
@@ -127,3 +132,42 @@ def test_unknown_wallbox_state_and_manual_override_never_issue_a_command() -> No
 def test_invalid_requested_current_is_rejected() -> None:
     with pytest.raises(ValueError):
         WallboxControlConfig().normalize_current_a(float("nan"))
+
+
+def test_mode_off_stops_a_running_session() -> None:
+    now = datetime(2026, 1, 1, 10, 0)
+    controller = WallboxController(
+        WallboxControlConfig(start_delay_s=0, stop_delay_s=0, minimum_runtime_s=0)
+    )
+    decision = controller.evaluate(make_state(now, charging=True, current_a=10, mode="off"))
+    assert decision.action is WallboxAction.STOP
+    assert decision.reason == "mode_off"
+    idle = controller.evaluate(make_state(now, mode="off"))
+    assert idle.action is WallboxAction.HOLD
+    assert idle.reason == "mode_off"
+
+
+def test_mode_now_starts_at_maximum_without_surplus() -> None:
+    now = datetime(2026, 1, 1, 10, 0)
+    controller = WallboxController(
+        WallboxControlConfig(start_delay_s=0, stop_delay_s=0, minimum_runtime_s=0)
+    )
+    decision = controller.evaluate(make_state(now, recommended_current_a=0, mode="now"))
+    assert decision.action is WallboxAction.START
+    assert decision.target_current_a == 16
+
+
+def test_closed_schedule_does_not_start() -> None:
+    now = datetime(2026, 1, 1, 10, 0)
+    controller = WallboxController(
+        WallboxControlConfig(start_delay_s=0, stop_delay_s=0, minimum_runtime_s=0)
+    )
+    decision = controller.evaluate(make_state(now, schedule_open=False))
+    assert decision.action is WallboxAction.HOLD
+    assert decision.reason == "outside_schedule"
+
+
+def test_smooth_current_keeps_the_first_sample() -> None:
+    assert smooth_current(None, 10) == 10
+    assert smooth_current(None, None) is None
+    assert smooth_current(10, 0) == 6.5

@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from custom_components.pv_charge_manager.forecast_log import record_forecast
+from custom_components.pv_charge_manager.forecast_log import record_forecast, record_sources
 
 START = datetime(2026, 10, 1, 8, 0, tzinfo=UTC)
 
@@ -54,3 +54,18 @@ def test_naive_time_is_ignored() -> None:
         is False
     )
     assert learning == {}
+
+
+def test_sources_keep_separate_hours() -> None:
+    learning: dict = {}
+    sources = [
+        {"id": "sensor.dach", "pv_w": 1000, "hour_w": 2000},
+        {"id": "sensor.garage", "pv_w": 100, "hour_w": 50},
+    ]
+    record_sources(learning, now=START, sources=sources)
+    record_sources(learning, now=START + timedelta(seconds=30), sources=sources)
+    roof = learning["sources"]["sensor.dach"]["hours"]["08"]
+    garage = learning["sources"]["sensor.garage"]["hours"]["08"]
+    assert roof["forecast_w"] == 2000
+    assert garage["forecast_w"] == 50
+    assert roof["actual_wh"] > garage["actual_wh"]

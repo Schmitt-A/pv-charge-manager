@@ -19,9 +19,11 @@ from .controls import (
     write_select,
 )
 from .probe import EntitySample, probe_entity
+from .schedule import WEEKDAYS
 from .setup_draft import SetupDraft
 
 _CLOCK = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+_WEEK_KEY = re.compile(rf"^week_({'|'.join(WEEKDAYS)})_(start|end)$")
 _PROBE_LABELS = {
     "loaded": "geladen",
     "missing": "fehlt",
@@ -61,6 +63,7 @@ def build_panel_snapshot(
         "assumption": bool(meta.get("assumption")),
         "recommendation": state.get("battery_recommendation"),
         "night_reserve": state.get("night_reserve"),
+        "balancing": state.get("balancing"),
         "battery_band": _band(
             state.get("battery_full_at_early"), state.get("battery_full_at_late")
         ),
@@ -107,6 +110,13 @@ def apply_panel_control(
     """Store one overview control. A rejected value leaves the plan unchanged."""
     if key == "departure":
         _write_departure(plans, value)
+        return
+    if key == "late_hours":
+        _write_late_hours(plans, value)
+        return
+    week_match = _WEEK_KEY.match(key)
+    if week_match:
+        _write_week(plans, week_match.group(1), week_match.group(2), value)
         return
     if key == "always_charge":
         write_always_charge(settings, _as_bool(value))
@@ -217,7 +227,99 @@ def _controls(settings: dict[str, Any], plans: list[dict[str, Any]]) -> dict[str
         "price_limit_eur": read_number(settings, "price_limit_eur"),
         "target_soc": read_number(settings, "target_soc"),
         "departure": _read_departure(plans, settings),
+        "late_hours": _read_late_hours(plans),
+        "week": _read_week(plans),
     }
+
+
+def _read_late_hours(plans: list[dict[str, Any]]) -> int:
+    if not plans or not isinstance(plans[0], dict):
+        return 0
+    value = plans[0].get("late_hours")
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return 0
+    hours = round(float(value))
+    if hours < 1 or hours > 12:
+        return 0
+    return hours
+
+
+def _write_late_hours(plans: list[dict[str, Any]], value: Any) -> None:
+    if isinstance(value, bool):
+        raise RejectedControl("late_hours")
+    if value in {None, ""}:
+        _clear_late_hours(plans)
+        return
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        raise RejectedControl("late_hours") from None
+    if not math.isfinite(number):
+        raise RejectedControl("late_hours")
+    hours = round(number)
+    if abs(number - hours) > 0.001 or hours < 0 or hours > 12:
+        raise RejectedControl("late_hours")
+    if hours == 0:
+        _clear_late_hours(plans)
+        return
+    _ensure_plan(plans)["late_hours"] = hours
+
+
+def _clear_late_hours(plans: list[dict[str, Any]]) -> None:
+    if plans and isinstance(plans[0], dict):
+        plans[0].pop("late_hours", None)
+        _drop_empty_plan(plans)
+
+
+def _read_week(plans: list[dict[str, Any]]) -> dict[str, dict[str, str]]:
+    stored: dict[str, Any] = {}
+    if plans and isinstance(plans[0], dict) and isinstance(plans[0].get("week"), dict):
+        stored = plans[0]["week"]
+    week: dict[str, dict[str, str]] = {}
+    for day in WEEKDAYS:
+        entry = stored.get(day)
+        if not isinstance(entry, dict):
+            entry = {}
+        week[day] = {"start": str(entry.get("start") or ""), "end": str(entry.get("end") or "")}
+    return week
+
+
+def _write_week(plans: list[dict[str, Any]], day: str, field: str, value: Any) -> None:
+    text = "" if value is None else str(value).strip()
+    if text and not _CLOCK.match(text):
+        raise RejectedControl(f"week_{day}_{field}")
+    plan = _ensure_plan(plans)
+    week = plan.get("week")
+    if not isinstance(week, dict):
+        week = {}
+    entry = week.get(day)
+    entry = {} if not isinstance(entry, dict) else dict(entry)
+    if text:
+        entry[field] = text
+    else:
+        entry.pop(field, None)
+    if entry:
+        week[day] = entry
+    else:
+        week.pop(day, None)
+    if week:
+        plan["week"] = week
+    else:
+        plan.pop("week", None)
+    _drop_empty_plan(plans)
+
+
+def _ensure_plan(plans: list[dict[str, Any]]) -> dict[str, Any]:
+    if plans and isinstance(plans[0], dict):
+        return plans[0]
+    plans.clear()
+    plans.append({})
+    return plans[0]
+
+
+def _drop_empty_plan(plans: list[dict[str, Any]]) -> None:
+    if plans and isinstance(plans[0], dict) and not plans[0]:
+        plans.pop(0)
 
 
 def _read_departure(plans: list[dict[str, Any]], settings: dict[str, Any]) -> str:

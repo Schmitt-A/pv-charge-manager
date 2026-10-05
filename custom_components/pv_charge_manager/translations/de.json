@@ -187,6 +187,9 @@
       },
       "autonomy_hours": {
         "name": "Autonomiestunden"
+      },
+      "balancing": {
+        "name": "Zellenausgleich"
       }
     },
     "select": {

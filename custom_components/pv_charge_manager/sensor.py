@@ -113,6 +113,10 @@ SENSOR_DESCRIPTIONS = (
         translation_key="autonomy_hours",
         native_unit_of_measurement="h",
     ),
+    SensorEntityDescription(
+        key="balancing",
+        translation_key="balancing",
+    ),
 )
 
 PREVIEW_KEYS = {
@@ -131,6 +135,7 @@ SITE_KEYS = {
     "night_reserve",
     "morning_soc",
     "autonomy_hours",
+    "balancing",
 }
 TIMESTAMP_KEYS = {
     "battery_full_at",

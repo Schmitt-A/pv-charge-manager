@@ -2,7 +2,11 @@
 
 from datetime import UTC, datetime
 
-from custom_components.pv_charge_manager.balance import storage_outlook, zero_export_status
+from custom_components.pv_charge_manager.balance import (
+    balancing_advice,
+    storage_outlook,
+    zero_export_status,
+)
 from custom_components.pv_charge_manager.panel import build_panel_snapshot
 
 NOW = datetime(2026, 10, 6, 20, 0, tzinfo=UTC)
@@ -90,3 +94,22 @@ def test_panel_shows_the_night_sentence_and_keeps_the_current() -> None:
     )
     assert snapshot["night_reserve"].startswith("Die Nachtreserve")
     assert snapshot["recommended_current_a"] == 6
+
+
+def test_balancing_stays_a_sentence() -> None:
+    full, day = balancing_advice(100, 100, None, NOW)
+    assert "nicht fällig" in full
+    assert day == "2026-10-06"
+    missing, kept = balancing_advice(None, 100, None, NOW)
+    assert "Ladestand" in missing
+    assert kept is None
+    waiting, none = balancing_advice(40, 100, None, NOW)
+    assert "steht an" in waiting
+    assert none is None
+    due, last = balancing_advice(40, 100, "2026-08-01", NOW)
+    assert "fällig" in due
+    assert "Wechselrichter" in due
+    assert last == "2026-08-01"
+    quiet, recent = balancing_advice(40, 100, "2026-10-01", NOW)
+    assert quiet == "Der Zellenausgleich ist nicht fällig."
+    assert recent == "2026-10-01"

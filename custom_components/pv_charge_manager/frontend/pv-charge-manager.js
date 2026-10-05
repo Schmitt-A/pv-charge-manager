@@ -12,6 +12,16 @@ const SELECTS = [
   ["strategy", "Strategie", [["forecast", "Nur Prognose"], ["forecast_price", "Prognose und Preis"]]],
 ];
 
+const DAYS = [
+  ["mo", "Montag"],
+  ["di", "Dienstag"],
+  ["mi", "Mittwoch"],
+  ["do", "Donnerstag"],
+  ["fr", "Freitag"],
+  ["sa", "Samstag"],
+  ["so", "Sonntag"],
+];
+
 const NUMBERS = [
   ["target_soc", "Ziel des Autos", "Prozent", 1],
   ["priority_soc", "Priorität der Batterie", "Prozent", 1],
@@ -72,8 +82,10 @@ class PVChargeManagerPanel extends HTMLElement {
     if (snap.assumption) this._root.append(heading("Auto-Wert ist eine Annahme.", "detail"));
     this._root.append(facts(snap), flow(snap.flow), days(snap), controls(snap, (key, value) => this._set(key, value)));
     if (snap.recommendation) this._root.append(heading(snap.recommendation, "detail"));
+    if (snap.balancing) this._root.append(heading(snap.balancing, "detail"));
     if (snap.night_reserve) this._root.append(heading(snap.night_reserve, "detail"));
     this._root.append(probe(snap.probe), backup(snap, this._hass, () => this._refresh()));
+    if (snap.step) this._root.append(heading(`Gespeicherter Schritt: ${snap.step}`, "detail"));
   }
 
   _note(text) {
@@ -192,6 +204,14 @@ function controls(snap, setControl) {
     section.append(stepper(label, unit, values[key], step, (value) => setControl(key, value)));
   }
   section.append(stepper("Abfahrt", "Uhrzeit", values.departure || "", null, (value) => setControl("departure", value), true));
+  section.append(stepper("Spätes Netzfenster", "Stunden vor Abfahrt, 0 löscht", values.late_hours || 0, 1, (value) => setControl("late_hours", value)));
+  section.append(heading("Wochenplan. Ohne Eintrag ist jeder Tag offen. Ist ein Tag eingetragen, bleiben die anderen zu.", "detail"));
+  const week = values.week || {};
+  for (const [day, label] of DAYS) {
+    const entry = week[day] || {};
+    section.append(stepper(`${label} von`, "Uhrzeit", entry.start || "", null, (value) => setControl(`week_${day}_start`, value), true));
+    section.append(stepper(`${label} bis`, "Uhrzeit", entry.end || "", null, (value) => setControl(`week_${day}_end`, value), true));
+  }
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "card switch";

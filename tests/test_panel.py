@@ -91,3 +91,31 @@ def test_probe_uses_the_everyday_words() -> None:
     by_id = {row["entity_id"]: row["label"] for row in rows}
     assert by_id["sensor.grid_in"] == "geladen"
     assert by_id["sensor.grid_out"] == "fehlt"
+
+
+def test_week_and_late_window_roundtrip() -> None:
+    settings = default_settings()
+    plans: list[dict] = [{"departure": "18:00"}]
+    apply_panel_control(settings, plans, "late_hours", 2)
+    apply_panel_control(settings, plans, "week_mo_start", "08:00")
+    apply_panel_control(settings, plans, "week_mo_end", "18:00")
+    assert plans[0]["late_hours"] == 2
+    assert plans[0]["week"]["mo"] == {"start": "08:00", "end": "18:00"}
+    assert plans[0]["departure"] == "18:00"
+    snapshot = build_panel_snapshot(
+        {"balancing": "Der Zellenausgleich ist nicht fällig.", "recommended_current_a": 8},
+        settings,
+        plans=plans,
+    )
+    assert snapshot["controls"]["late_hours"] == 2
+    assert snapshot["controls"]["week"]["di"] == {"start": "", "end": ""}
+    assert "nicht fällig" in snapshot["balancing"]
+    assert snapshot["recommended_current_a"] == 8
+    apply_panel_control(settings, plans, "late_hours", 0)
+    assert "late_hours" not in plans[0]
+    with pytest.raises(RejectedControl):
+        apply_panel_control(settings, plans, "week_di_start", "25:99")
+    apply_panel_control(settings, plans, "week_mo_start", "")
+    apply_panel_control(settings, plans, "week_mo_end", "")
+    assert "week" not in plans[0]
+    assert plans[0]["departure"] == "18:00"

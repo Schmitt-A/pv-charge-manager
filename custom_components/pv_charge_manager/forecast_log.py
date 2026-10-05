@@ -66,6 +66,41 @@ def record_forecast(
     return changed
 
 
+def record_sources(
+    learning: dict[str, Any],
+    *,
+    now: datetime,
+    sources: list[dict[str, Any]] | None,
+) -> bool:
+    """Record one sample per PV source. Missing sources leave the site factor alone."""
+    if not sources:
+        return False
+    bucket = learning.get("sources")
+    if not isinstance(bucket, dict):
+        bucket = {}
+        learning["sources"] = bucket
+    changed = False
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        source_id = str(source.get("id") or "")
+        if not source_id:
+            continue
+        state = bucket.get(source_id)
+        if not isinstance(state, dict):
+            state = {}
+            bucket[source_id] = state
+            changed = True
+        if record_forecast(
+            state,
+            now=now,
+            pv_w=source.get("pv_w"),
+            hour_forecast_w=source.get("hour_w"),
+        ):
+            changed = True
+    return changed
+
+
 def _close_day(learning: dict[str, Any]) -> None:
     hours = learning.get("hours")
     if not isinstance(hours, dict):

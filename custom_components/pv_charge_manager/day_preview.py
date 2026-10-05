@@ -68,8 +68,16 @@ def parse_departure(value: Any, now: datetime) -> datetime | None:
 
 
 def learned_factor(learning: dict[str, Any] | None) -> tuple[float, str]:
-    """Keep the factor at 1 until seven samples exist."""
+    """Keep the factor at 1 until seven samples exist. Trusted sources override the site."""
     data = learning or {}
+    trusted = _trusted_source_factors(data.get("sources"))
+    if trusted:
+        average = sum(trusted) / len(trusted)
+        return min(1.3, max(0.5, average)), "high"
+    return _stored_factor(data)
+
+
+def _stored_factor(data: dict[str, Any]) -> tuple[float, str]:
     try:
         samples = int(data.get("samples", data.get("sample_count", 0)) or 0)
     except (TypeError, ValueError):
@@ -81,6 +89,19 @@ def learned_factor(learning: dict[str, Any] | None) -> tuple[float, str]:
     except (TypeError, ValueError):
         factor = 1.0
     return min(1.3, max(0.5, factor)), "high"
+
+
+def _trusted_source_factors(sources: Any) -> list[float]:
+    if not isinstance(sources, dict):
+        return []
+    factors: list[float] = []
+    for source in sources.values():
+        if not isinstance(source, dict):
+            continue
+        factor, trust = _stored_factor(source)
+        if trust == "high":
+            factors.append(factor)
+    return factors
 
 
 def build_day_preview(
@@ -112,6 +133,8 @@ def build_day_preview(
     mode: str = "smart",
     solar_share: float = 100.0,
     cheap_eur: float = CHEAP_EUR,
+    week: dict | None = None,
+    late_hours: float | None = None,
 ) -> dict[str, Any]:
     """Build today and tomorrow from the supplied forecast. No invented curve."""
     if not forecast_w:
@@ -144,6 +167,8 @@ def build_day_preview(
         cheap_eur=cheap_eur,
         car_enabled=car_enabled,
         force_max=force_max and has_vehicle,
+        week=week,
+        late_hours=late_hours,
     )
     nominal = simulate_case(slots, config, factor)
     good = simulate_case(slots, config, factor * GOOD_FACTOR)

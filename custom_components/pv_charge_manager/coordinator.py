@@ -13,7 +13,7 @@ from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .allocation import PvSource, allocate_power_by_tariff, allocated_opportunity_cost_eur_per_hour
-from .balance import storage_outlook, zero_export_status
+from .balance import balancing_advice, storage_outlook, zero_export_status
 from .calculation import ChargeLimits, PowerSnapshot, recommend_current
 from .const import (
     CONF_BATTERY_CHARGE_POWER_SENSOR,
@@ -56,13 +56,15 @@ from .day_preview import (
     parse_number_series,
     sum_series,
 )
-from .forecast_log import record_forecast
+from .forecast_log import record_forecast, record_sources
+from .schedule import grid_window_open, schedule_open
 from .wallbox import (
     WallboxAction,
     WallboxControlConfig,
     WallboxController,
     WallboxDecision,
     WallboxState,
+    smooth_current,
 )
 
 
@@ -80,6 +82,7 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._logger = logger
         self._wallbox_controller: WallboxController | None = None
         self._wallbox_config_error: str | None = None
+        self._smoothed_current: float | None = None
         try:
             self._wallbox_controller = WallboxController(_wallbox_config(entry.options))
         except ValueError as err:
@@ -155,6 +158,9 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "wallbox_charging_power_sensor": options.get(CONF_WALLBOX_CHARGING_POWER_SENSOR),
                 "wallbox_manual_override_sensor": options.get(CONF_WALLBOX_MANUAL_OVERRIDE_SENSOR),
             },
+            "_source_pv": [
+                {"id": entity_id, "pv_w": value} for entity_id, value in pv_power_values
+            ],
         }
 
         if not available:
@@ -259,14 +265,39 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             manual_override = override_state is None or override_state
 
         current_a = _read_current(self.hass, options.get(CONF_WALLBOX_CURRENT_NUMBER), warnings)
+        settings, _learning, plans = _stored_state(getattr(self, "runtime_store", None))
+        now = self._now()
+        mode = _mode(settings)
+        plan = plans[0] if plans and isinstance(plans[0], dict) else {}
+        week = plan.get("week") if isinstance(plan.get("week"), dict) else None
+        late_hours = _optional_float(plan.get("late_hours"))
+        departure = _departure(plans, settings, now)
+        open_now = schedule_open(now, week)
+        grid_open = grid_window_open(now, departure, late_hours)
+        if not grid_open and mode == "now":
+            mode = "smart"
+        always = bool(settings.get("always_charge")) and grid_open and open_now and mode != "off"
+        raw = result.get("recommended_current_a")
+        if raw is None or mode == "off" or not open_now:
+            self._smoothed_current = None
+            command = raw
+        else:
+            self._smoothed_current = smooth_current(self._smoothed_current, raw)
+            command = self._smoothed_current
+        if always and isinstance(command, int | float):
+            command = max(
+                float(command), float(options.get(CONF_MIN_CURRENT_A, DEFAULT_MIN_CURRENT_A))
+            )
         return WallboxState(
-            now=datetime.now(UTC),
+            now=now,
             vehicle_connected=connected,
             charging=charging,
             current_a=current_a,
             inputs_available=bool(result.get("available")),
-            recommended_current_a=result.get("recommended_current_a"),
+            recommended_current_a=command,
             manual_override=manual_override,
+            mode=mode,
+            schedule_open=open_now,
         )
 
     async def _apply_wallbox_decision(
@@ -388,6 +419,30 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     pv_w=result.get("pv_power_w"),
                     hour_forecast_w=result.get("_hour_forecast_w"),
                 )
+                if record_sources(
+                    learning,
+                    now=self._now(),
+                    sources=result.get("_source_samples"),
+                ):
+                    changed = True
+                advice, full_day = balancing_advice(
+                    result.get("battery_soc"),
+                    _setting_float(
+                        store.runtime.state.settings
+                        if isinstance(store.runtime.state.settings, dict)
+                        else {},
+                        "max_soc",
+                        100.0,
+                    ),
+                    learning.get("last_full")
+                    if isinstance(learning.get("last_full"), str)
+                    else None,
+                    self._now(),
+                )
+                result["balancing"] = advice
+                if full_day and learning.get("last_full") != full_day:
+                    learning["last_full"] = full_day
+                    changed = True
                 result["recommended_current_a"] = before
                 if changed:
                     await store.async_save()
@@ -397,6 +452,12 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             result["warnings"] = sorted(set(warnings))
         finally:
             result.pop("_hour_forecast_w", None)
+            result.pop("_source_pv", None)
+            result.pop("_source_samples", None)
+        if "balancing" not in result:
+            result["balancing"] = balancing_advice(
+                result.get("battery_soc"), 100.0, None, self._now()
+            )[0]
 
     def _attach_flow(self, result: dict[str, Any]) -> None:
         """Remember live watts for the panel. These values do not change the setpoint."""
@@ -459,19 +520,29 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not entity_ids:
             return
         series: list[list[float]] = []
+        hours_by_index: list[float | None] = []
         for entity_id in entity_ids:
             raw = _read_state_text(self.hass, entity_id, warnings)
             if raw is None:
+                hours_by_index.append(None)
                 continue
             values = parse_number_series(raw)
             if values is None:
                 warnings.append(f"invalid_forecast:{entity_id}")
+                hours_by_index.append(None)
                 continue
             scaled = _scale_power(values, _state_unit(self.hass, entity_id))
             if scaled is None:
                 warnings.append(f"unexpected_power_unit:{entity_id}")
+                hours_by_index.append(None)
                 continue
             series.append(scaled)
+            hours_by_index.append(scaled[0] if scaled else None)
+        result["_source_samples"] = _source_samples(
+            list(options.get(CONF_PV_POWER_SENSORS) or []),
+            result.get("_source_pv") or [],
+            hours_by_index,
+        )
         if not series:
             warnings.append("forecast_unavailable")
             return
@@ -500,6 +571,8 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             limits = ChargeLimits()
         now = self._now()
         departure = _departure(plans, settings, now)
+        plan = plans[0] if plans and isinstance(plans[0], dict) else {}
+        week = plan.get("week") if isinstance(plan.get("week"), dict) else None
         forecast_w = sum_series(series)
         result["_forecast_w"] = forecast_w
         result["_hour_forecast_w"] = forecast_w[0] if forecast_w else None
@@ -531,6 +604,8 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             mode=_mode(settings),
             solar_share=_setting_float(settings, "solar_share", 100.0),
             cheap_eur=_setting_float(settings, "price_limit_eur", 0.12),
+            week=week,
+            late_hours=_optional_float(plan.get("late_hours")),
         )
         result.update(preview)
 
@@ -660,6 +735,23 @@ def _read_percent(hass, entity_id: str | None, warnings: list[str]) -> float | N
         warnings.append(f"invalid_soc:{entity_id}")
         return None
     return value
+
+
+def _source_samples(
+    pv_ids: list[Any],
+    live: list[Any],
+    hours: list[float | None],
+) -> list[dict[str, Any]]:
+    """Pair each PV entity with the forecast series at the same index."""
+    power: dict[str, Any] = {}
+    for item in live:
+        if isinstance(item, dict) and item.get("id"):
+            power[str(item["id"])] = item.get("pv_w")
+    samples: list[dict[str, Any]] = []
+    for index, entity_id in enumerate(pv_ids):
+        hour = hours[index] if index < len(hours) else None
+        samples.append({"id": str(entity_id), "pv_w": power.get(str(entity_id)), "hour_w": hour})
+    return samples
 
 
 def _optional_float(value: Any) -> float | None:

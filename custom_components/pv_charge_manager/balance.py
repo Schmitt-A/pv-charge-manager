@@ -199,3 +199,31 @@ def _pct(stored: float, capacity: float) -> int:
     if capacity <= 0:
         return 0
     return round(min(100, max(0, (stored / capacity) * 100)))
+
+
+def balancing_advice(
+    battery_soc: float | None,
+    max_soc: float,
+    last_full: str | None,
+    now: datetime,
+) -> tuple[str, str | None]:
+    """Say whether a full charge is due. This never writes to the inverter."""
+    if battery_soc is None:
+        return "Der Zellenausgleich braucht den Ladestand.", last_full
+    if battery_soc >= max_soc - 1:
+        return (
+            "Der Speicher war voll. Der Zellenausgleich ist nicht fällig.",
+            now.date().isoformat(),
+        )
+    if not last_full:
+        return "Zellenausgleich steht an, sobald die Batterie einmal voll wird.", None
+    try:
+        last = datetime.fromisoformat(last_full).date()
+    except ValueError:
+        return "Zellenausgleich steht an, sobald die Batterie einmal voll wird.", None
+    if (now.date() - last).days >= 30:
+        return (
+            "Zellenausgleich ist fällig. Einmal voll laden, ohne an den Wechselrichter zu schreiben.",
+            last_full,
+        )
+    return "Der Zellenausgleich ist nicht fällig.", last_full
