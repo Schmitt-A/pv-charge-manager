@@ -1,9 +1,11 @@
 # Roadmap
 
 The agreed scope is one wallbox, one home battery, and one vehicle. Measurements
-come only from Home Assistant entities and devices. Heating, smart plugs, heat
-pumps, and extra charge points are out of the next slice. Battery strategy is
-calculated now and applied to the inverter only in a later version. See
+come only from Home Assistant entities and devices. Configuration is a separate
+step menu with a live data preview and JSON save/load on every step. See
+[CONFIGURATION.md](CONFIGURATION.md). Heating, smart plugs, heat pumps, and
+extra charge points are out of the next slice. Battery strategy is calculated
+now and applied to the inverter only in a later version. See
 [FUNKTIONSPLAN.md](FUNKTIONSPLAN.md).
 
 ## Version 0.1 - Energy monitor
@@ -34,10 +36,14 @@ Goal: controlled PV surplus charging with conservative hardware safety rules.
 - fallback behavior for unavailable sensors
 - manual override handling
 
-## Version 0.3 - Vehicle and charge plans
+## Version 0.3 - Guided setup and charge plans
 
 Goal: one vehicle profile and a charge plan, without new inverter writes.
 
+- step menu for site, PV, battery, forecast, wallbox, vehicle, and review
+- immediate connection test with raw and normalized preview
+- hints for loaded, missing, stale, and invalid values
+- JSON save and load on every step, followed by a retest
 - vehicle profile: capacity, phases, current limits, wallbox-to-battery efficiency
 - SOC mapping, with estimated SOC marked between polls
 - modes off, smart, and now
@@ -87,9 +93,9 @@ Goal: a phone and desktop sidebar panel. It does not own charging state.
 - energy flow for grid, PV, home, battery, and wallbox
 - two-day forecast with the good and bad band
 - visible priority, buffer, and reserve limits
+- the same step menu, preview, and JSON actions
 - vehicle and charge plan editor
 - recommendation text for surplus start and battery support
-- backup download and JSON upload
 - stacked layout at 360 pixels, Home Assistant light and dark theme
 - diagnostics page with the decision reason
 - WebSocket commands
