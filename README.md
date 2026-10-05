@@ -17,24 +17,23 @@ Implemented now:
 - Home Assistant custom integration skeleton
 - config flow and options flow for entity mapping and electrical limits
 - coordinator-backed runtime snapshot with conservative unavailable-state handling
-- sensors for PV surplus, recommended current, recommended charge power, and
-  opportunity cost
+- sensors for surplus, the day preview, and the stored plan inputs
 - opt-in wallbox control with current limits, start/stop debounce, minimum
   runtime, manual override, and safe fallback
+- versioned JSON backup and a sidebar panel that renders the calculated snapshot
 - manifest metadata for `Schmitt-A/pv-charge-manager`
 - pure Python calculation modules
 - tests for surplus, vehicle demand, tariff allocation, learned forecast
-  correction, and charging window planning
+  correction, charging window planning, and the panel snapshot
 - ruff, pytest, pre-commit, and GitHub Actions configuration
 - architecture, configuration, roadmap, and task documentation
 
 Planned next:
 
-- one vehicle profile, charge plan, and selectable forecast or price strategy
-- today and tomorrow preview, including full times and a good/bad forecast band
-- battery strategy as advisory sensors before any inverter writes
-- versioned JSON backup that newer app versions can import
-- responsive panel after the sensors and backup service exist
+- persisting new forecast observations and the zero-export diagnostic
+- weekly plan editing
+- inverter writes for discharge lock, grid charge, and buffer
+- the options step menu inside the panel
 
 The agreed scope, the preview rules, and the coverage gaps are documented in
 [docs/FUNKTIONSPLAN.md](docs/FUNKTIONSPLAN.md).

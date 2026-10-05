@@ -30,11 +30,13 @@ Home Assistant states
 - `backup.py`: versioned JSON export, import, and schema migrations.
 - `storage.py`: persisted vehicle, plan, learning state and backup draft.
 - `controls.py`: stored mode, strategy and plan numbers. They do not write the wallbox.
+- `panel.py`: snapshot for the sidebar. It does not calculate a second plan.
 - `coordinator.py`: Home Assistant state gathering, validation, and update orchestration.
 - `wallbox.py`: pure current validation, debounce, minimum-runtime, and fallback decisions.
 - `sensor.py`: first read-only calculated sensors from coordinator state.
 - `select.py`, `number.py`, `switch.py`, `button.py`: dashboard inputs stored beside the plan.
-- `binary_sensor.py` and `websocket.py`: still unused.
+- `websocket.py`: serves the panel snapshot and stores one control change.
+- `binary_sensor.py`: still unused.
 
 ## Runtime model
 
@@ -125,11 +127,9 @@ control logic needs these guardrails:
 
 ## Frontend strategy
 
-Entities remain the first usable interface. The custom panel is a responsive
-sidebar view for phone and desktop: energy flow, two-day preview, plan editor,
-and backup actions. It uses the WebSocket API and never owns core charging state.
-Layout follows the Home Assistant theme, stacks on narrow screens, and keeps the
-main column usable at 360 pixels.
+Entities remain the first usable interface. The sidebar panel reads one WebSocket
+snapshot: sentence, energy flow, two day cards, the stored controls, probe hints,
+and the JSON backup. It does not own charging state and does not recalculate.
 
 ## Backup
 

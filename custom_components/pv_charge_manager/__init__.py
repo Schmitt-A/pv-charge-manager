@@ -28,6 +28,10 @@ async def async_setup_entry(hass, entry) -> bool:
         "store": store,
     }
     await _async_ensure_services(hass)
+    await _async_ensure_panel(hass)
+    from .websocket import async_register_websocket_commands
+
+    async_register_websocket_commands(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     return True
@@ -41,6 +45,7 @@ async def async_unload_entry(hass, entry) -> bool:
         if not hass.data.get(DOMAIN):
             for service in _SERVICES:
                 hass.services.async_remove(DOMAIN, service)
+            await _async_remove_panel(hass)
     return unload_ok
 
 
@@ -115,3 +120,40 @@ def _store_for_call(hass, call):
     if item is None:
         return None
     return item.get("store")
+
+
+_PANEL_URL = "/pv_charge_manager/frontend/pv-charge-manager.js"
+_PANEL_KEY = f"{DOMAIN}_panel"
+
+
+async def _async_ensure_panel(hass) -> None:
+    """Register the sidebar panel once. It only renders the coordinator snapshot."""
+    if hass.data.get(_PANEL_KEY):
+        return
+    from pathlib import Path
+
+    from homeassistant.components import panel_custom
+    from homeassistant.components.http import StaticPathConfig
+
+    path = Path(__file__).parent / "frontend" / "pv-charge-manager.js"
+    await hass.http.async_register_static_paths([StaticPathConfig(_PANEL_URL, str(path), False)])
+    await panel_custom.async_register_panel(
+        hass,
+        frontend_url_path="pv-charge-manager",
+        webcomponent_name="pv-charge-manager-panel",
+        sidebar_title="PV Charge Manager",
+        sidebar_icon="mdi:car-electric",
+        module_url=_PANEL_URL,
+        embed_iframe=True,
+        require_admin=False,
+    )
+    hass.data[_PANEL_KEY] = True
+
+
+async def _async_remove_panel(hass) -> None:
+    if not hass.data.get(_PANEL_KEY):
+        return
+    from homeassistant.components import panel_custom
+
+    panel_custom.async_remove_panel(hass, "pv-charge-manager")
+    hass.data.pop(_PANEL_KEY, None)

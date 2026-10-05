@@ -348,12 +348,26 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _finish(self, result: dict[str, Any], warnings: list[str]) -> dict[str, Any]:
         """Attach the forecast preview. The wallbox setpoint is left untouched."""
+        self._attach_flow(result)
         try:
             self._attach_day_preview(result, warnings)
         except (TypeError, ValueError, OverflowError) as err:
             warnings.append(f"forecast_preview_failed:{err}")
         result["warnings"] = sorted(set(warnings))
         return result
+
+    def _attach_flow(self, result: dict[str, Any]) -> None:
+        """Remember live watts for the panel. These values do not change the setpoint."""
+        options = self.entry.options
+        quiet: list[str] = []
+        result["grid_import_w"] = _quiet_power(self.hass, options.get(CONF_GRID_IMPORT_SENSOR))
+        result["grid_export_w"] = _quiet_power(self.hass, options.get(CONF_GRID_EXPORT_SENSOR))
+        result["wallbox_power_w"] = _quiet_power(
+            self.hass, options.get(CONF_WALLBOX_CHARGING_POWER_SENSOR)
+        )
+        result["battery_soc"] = _read_percent(
+            self.hass, options.get(CONF_BATTERY_SOC_SENSOR), quiet
+        )
 
     def _attach_day_preview(self, result: dict[str, Any], warnings: list[str]) -> None:
         """Read forecast entities and store the day preview next to the surplus."""
@@ -622,6 +636,13 @@ def _read_current(hass, entity_id: str | None, warnings: list[str]) -> float | N
         warnings.append(f"unexpected_current_unit:{entity_id}")
         return None
     return value
+
+
+def _quiet_power(hass, entity_id: str | None) -> float | None:
+    """Read a display-only power value without adding a coordinator warning."""
+    if not entity_id:
+        return None
+    return _round_or_none(_read_power(hass, entity_id, []))
 
 
 def _read_power(hass, entity_id: str, warnings: list[str]) -> float | None:

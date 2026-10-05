@@ -59,11 +59,11 @@ Backup format: [BACKUP.md](BACKUP.md).
 
 ## P5 - Responsive panel
 
-- [ ] Add custom panel WebSocket commands.
-- [ ] Build the phone and desktop energy-flow and two-day forecast view.
-- [ ] Move the step menu, preview, and JSON actions into the panel.
-- [ ] Add plan editing in the panel.
-- [ ] Verify the main column at 360 pixels in light and dark theme.
+- [x] Add custom panel WebSocket commands.
+- [x] Build the phone and desktop energy-flow and two-day forecast view.
+- [ ] Move the step menu into the panel. JSON save and load are already there.
+- [ ] Add weekly plan editing in the panel. Departure can already be stored.
+- [ ] Verify the main column at 360 pixels in a running Home Assistant.
 
 ## Backlog
 
