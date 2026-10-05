@@ -72,6 +72,7 @@ class PVChargeManagerPanel extends HTMLElement {
     if (snap.assumption) this._root.append(heading("Auto-Wert ist eine Annahme.", "detail"));
     this._root.append(facts(snap), flow(snap.flow), days(snap), controls(snap, (key, value) => this._set(key, value)));
     if (snap.recommendation) this._root.append(heading(snap.recommendation, "detail"));
+    if (snap.night_reserve) this._root.append(heading(snap.night_reserve, "detail"));
     this._root.append(probe(snap.probe), backup(snap, this._hass, () => this._refresh()));
   }
 

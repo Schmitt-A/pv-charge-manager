@@ -94,6 +94,25 @@ SENSOR_DESCRIPTIONS = (
         key="battery_recommendation",
         translation_key="battery_recommendation",
     ),
+    SensorEntityDescription(
+        key="zero_export",
+        translation_key="zero_export",
+    ),
+    SensorEntityDescription(
+        key="night_reserve",
+        translation_key="night_reserve",
+    ),
+    SensorEntityDescription(
+        key="morning_soc",
+        translation_key="morning_soc",
+        native_unit_of_measurement="%",
+        device_class=SensorDeviceClass.BATTERY,
+    ),
+    SensorEntityDescription(
+        key="autonomy_hours",
+        translation_key="autonomy_hours",
+        native_unit_of_measurement="h",
+    ),
 )
 
 PREVIEW_KEYS = {
@@ -106,6 +125,12 @@ PREVIEW_KEYS = {
     "plan_status",
     "minimum_power_today",
     "battery_recommendation",
+}
+SITE_KEYS = {
+    "zero_export",
+    "night_reserve",
+    "morning_soc",
+    "autonomy_hours",
 }
 TIMESTAMP_KEYS = {
     "battery_full_at",
@@ -162,6 +187,8 @@ class PVChargeManagerSensor(CoordinatorEntity[PVChargeManagerCoordinator], Senso
             return True
         if self.entity_description.key in PREVIEW_KEYS:
             return self.native_value is not None
+        if self.entity_description.key in SITE_KEYS:
+            return self.native_value is not None
         return bool(self.coordinator.data.get("available") and self.native_value is not None)
 
     @property
@@ -177,4 +204,11 @@ class PVChargeManagerSensor(CoordinatorEntity[PVChargeManagerCoordinator], Senso
             meta = self.coordinator.data.get("preview_meta")
             if isinstance(meta, dict):
                 attributes.update(meta)
+        if self.entity_description.key in SITE_KEYS:
+            meta = self.coordinator.data.get("site_meta")
+            if isinstance(meta, dict):
+                attributes.update(meta)
+            for key in ("zero_export_detail", "balance_surplus_w"):
+                if key in self.coordinator.data:
+                    attributes[key] = self.coordinator.data[key]
         return attributes

@@ -44,8 +44,8 @@ Backup format: [BACKUP.md](BACKUP.md).
 - [x] Add today and tomorrow chargeable-energy sensors.
 - [x] Add battery and vehicle full times for plan target and theoretical full.
 - [x] Mark unplugged vehicle results as assumptions.
-- [ ] Add the minimum-power hint and zero-export diagnostic.
-- [ ] Add efficiency, minimum reserve, night reserve, and feasibility sensors.
+- [x] Add the minimum-power hint and zero-export diagnostic.
+- [x] Add efficiency, minimum reserve, night reserve, and feasibility sensors.
 - [x] Recommend car surplus only above priority SOC and battery support down to the buffer.
 - [x] Add schema version 1 JSON export and import, with a migration test.
 - [ ] Keep inverter battery modes advisory until version 0.5.

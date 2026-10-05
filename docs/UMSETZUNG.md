@@ -18,6 +18,7 @@ Bereits verdrahtet:
 - [controls.py](../custom_components/pv_charge_manager/controls.py) prüft Modus, Strategie, Solaranteil, Ziel, Priorität, Puffer, Mindestreserve, Preisgrenze und Immer laden. Die Werte liegen im Store. `select.py`, `number.py`, `switch.py` und `button.py` speichern sie und rechnen neu. Die Wallbox-Steuerung bleibt in den Optionen. Der Sollwert bleibt `recommended_current_a`. Aus lädt das Auto in der Vorschau nicht. Sofort nimmt die volle Leistung. Der Solaranteil ändert die Mindestleistungs-Schwelle. Die Preisgrenze entscheidet, welche Stunde günstig ist.
 - [__init__.py](../custom_components/pv_charge_manager/__init__.py) lädt den Store vor dem Coordinator, registriert `export_backup`, `import_backup` und `recalculate` und hängt das Panel in die Seitenleiste. `start_boost` schreibt nur eine Warnung.
 - [panel.py](../custom_components/pv_charge_manager/panel.py) baut die Übersicht aus dem Coordinator-Stand und dem Store. [frontend/pv-charge-manager.js](../custom_components/pv_charge_manager/frontend/pv-charge-manager.js) zeigt Satz, Fluss, zwei Tageskarten, die Regler, die Probe-Hinweise und die JSON-Schaltflächen. Der Browser rechnet keinen Plan. `websocket.py` liefert den Snapshot und speichert eine Regleränderung.
+- [balance.py](../custom_components/pv_charge_manager/balance.py) erkennt Nulleinspeisung und sagt, ob die Nachtreserve bis morgens reicht. Wirkungsgrad und Mindestreserve stehen als Attribute daran. Der Wallbox-Sollwert bleibt `recommended_current_a`.
 
 Vorhanden, aber nicht angeschlossen:
 

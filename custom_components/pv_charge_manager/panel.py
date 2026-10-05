@@ -60,6 +60,7 @@ def build_panel_snapshot(
         "plan_status": state.get("plan_status"),
         "assumption": bool(meta.get("assumption")),
         "recommendation": state.get("battery_recommendation"),
+        "night_reserve": state.get("night_reserve"),
         "battery_band": _band(
             state.get("battery_full_at_early"), state.get("battery_full_at_late")
         ),

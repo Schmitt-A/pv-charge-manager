@@ -31,6 +31,7 @@ Home Assistant states
 - `storage.py`: persisted vehicle, plan, learning state and backup draft.
 - `controls.py`: stored mode, strategy and plan numbers. They do not write the wallbox.
 - `panel.py`: snapshot for the sidebar. It does not calculate a second plan.
+- `balance.py`: zero-export detection and the night-reserve recommendation. No wallbox write.
 - `coordinator.py`: Home Assistant state gathering, validation, and update orchestration.
 - `wallbox.py`: pure current validation, debounce, minimum-runtime, and fallback decisions.
 - `sensor.py`: first read-only calculated sensors from coordinator state.

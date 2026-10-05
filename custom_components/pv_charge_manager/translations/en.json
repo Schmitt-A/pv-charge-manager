@@ -170,6 +170,23 @@
       },
       "battery_recommendation": {
         "name": "Battery recommendation"
+      },
+      "zero_export": {
+        "name": "Zero export",
+        "state": {
+          "active": "active",
+          "inactive": "inactive",
+          "unknown": "unknown"
+        }
+      },
+      "night_reserve": {
+        "name": "Night reserve"
+      },
+      "morning_soc": {
+        "name": "Morning state of charge"
+      },
+      "autonomy_hours": {
+        "name": "Autonomy"
       }
     },
     "select": {

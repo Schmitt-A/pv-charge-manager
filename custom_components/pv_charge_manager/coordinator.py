@@ -13,6 +13,7 @@ from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .allocation import PvSource, allocate_power_by_tariff, allocated_opportunity_cost_eur_per_hour
+from .balance import storage_outlook, zero_export_status
 from .calculation import ChargeLimits, PowerSnapshot, recommend_current
 from .const import (
     CONF_BATTERY_CHARGE_POWER_SENSOR,
@@ -48,7 +49,13 @@ from .const import (
     DEFAULT_WALLBOX_STOP_DELAY_S,
     DOMAIN,
 )
-from .day_preview import build_day_preview, parse_departure, parse_number_series, sum_series
+from .day_preview import (
+    build_day_preview,
+    learned_factor,
+    parse_departure,
+    parse_number_series,
+    sum_series,
+)
 from .wallbox import (
     WallboxAction,
     WallboxControlConfig,
@@ -353,7 +360,12 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._attach_day_preview(result, warnings)
         except (TypeError, ValueError, OverflowError) as err:
             warnings.append(f"forecast_preview_failed:{err}")
+        try:
+            self._attach_site(result)
+        except (TypeError, ValueError, OverflowError) as err:
+            warnings.append(f"site_status_failed:{err}")
         result["warnings"] = sorted(set(warnings))
+        result.pop("_forecast_w", None)
         return result
 
     def _attach_flow(self, result: dict[str, Any]) -> None:
@@ -368,6 +380,47 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         result["battery_soc"] = _read_percent(
             self.hass, options.get(CONF_BATTERY_SOC_SENSOR), quiet
         )
+
+    def _attach_site(self, result: dict[str, Any]) -> None:
+        """Add zero-export and the night reserve. The wallbox current stays as it was."""
+        before = result.get("recommended_current_a")
+        result.update(
+            zero_export_status(
+                result.get("pv_power_w"),
+                result.get("home_consumption_w"),
+                result.get("battery_charge_power_w"),
+                result.get("grid_import_w"),
+                result.get("grid_export_w"),
+            )
+        )
+        settings, learning, _plans = _stored_state(getattr(self, "runtime_store", None))
+        capacity = _optional_float(settings.get("battery_capacity_kwh"))
+        soc = result.get("battery_soc")
+        home_w = result.get("home_consumption_w")
+        if soc is None or capacity is None or capacity <= 0 or home_w is None:
+            result["recommended_current_a"] = before
+            return
+        factor, _trust = learned_factor(learning)
+        result.update(
+            storage_outlook(
+                now=self._now(),
+                battery_soc=float(soc),
+                battery_capacity_kwh=capacity,
+                reserve_soc=_setting_float(settings, "reserve_soc", 20.0),
+                home_w=float(home_w),
+                battery_max_charge_w=_optional_float(settings.get("battery_max_charge_w"))
+                or 5000.0,
+                battery_efficiency=_optional_float(settings.get("battery_efficiency")) or 0.92,
+                max_soc=_setting_float(settings, "max_soc", 100.0),
+                reserve_power_w=float(
+                    self.entry.options.get(CONF_RESERVE_POWER_W, DEFAULT_RESERVE_POWER_W)
+                ),
+                forecast_w=result.get("_forecast_w"),
+                factor=factor,
+                vehicle_efficiency=_vehicle_float(settings, "charging_efficiency"),
+            )
+        )
+        result["recommended_current_a"] = before
 
     def _attach_day_preview(self, result: dict[str, Any], warnings: list[str]) -> None:
         """Read forecast entities and store the day preview next to the surplus."""
@@ -417,8 +470,10 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             limits = ChargeLimits()
         now = self._now()
         departure = _departure(plans, settings, now)
+        forecast_w = sum_series(series)
+        result["_forecast_w"] = forecast_w
         preview = build_day_preview(
-            forecast_w=sum_series(series),
+            forecast_w=forecast_w,
             home_w=float(home_w),
             now=now,
             battery_soc=battery_soc,
