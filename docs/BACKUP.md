@@ -2,6 +2,8 @@
 
 Settings and learned state are portable JSON. A backup from an older app version must load in a newer version. Home Assistant backups remain separate; this file is the app-level copy that can be downloaded and read back in.
 
+The configuration menu can save or load this file at every step, including an unfinished draft.
+
 ## Document
 
 ```json
@@ -9,6 +11,7 @@ Settings and learned state are portable JSON. A backup from an older app version
   "schema_version": 1,
   "app_version": "0.4.0",
   "exported_at": "2026-10-05T21:40:00+02:00",
+  "step": "battery",
   "settings": {},
   "plans": [],
   "entity_map": {},
@@ -16,7 +19,7 @@ Settings and learned state are portable JSON. A backup from an older app version
 }
 ```
 
-`schema_version` is the only migration key. `app_version` is informational.
+`schema_version` is the only migration key. `app_version` is informational. `step` restores the menu position.
 
 Included:
 
@@ -26,6 +29,7 @@ Included:
 - departure, weekly plan, late-charging window, price limit
 - entity IDs for grid, home, PV, battery, forecast, price, wallbox, and vehicle
 - learned forecast correction and the sample count per PV source
+- incomplete draft steps
 
 Excluded:
 
@@ -41,9 +45,11 @@ Excluded:
 - Migrations are pure functions and keep the original file unchanged until import succeeds.
 - Missing fields receive the current default and are listed in the import report.
 - Entity IDs that no longer exist are kept and marked missing. They are not silently dropped.
+- After import, every mapped entity is tested again before the menu continues.
 
 ## Entry points
 
+- Save and load on every configuration step.
 - Services `export_backup` and `import_backup`.
 - Panel actions download and upload the same JSON.
 - A copy can also be written under the Home Assistant config directory, outside the integration source tree.

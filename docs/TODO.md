@@ -1,6 +1,7 @@
 # Prioritized TODOs
 
 Agreed scope and coverage gaps: [FUNKTIONSPLAN.md](FUNKTIONSPLAN.md).
+Configuration menu: [CONFIGURATION.md](CONFIGURATION.md).
 Backup format: [BACKUP.md](BACKUP.md).
 
 ## P0 - Repository readiness
@@ -28,8 +29,12 @@ Backup format: [BACKUP.md](BACKUP.md).
 - [x] Add fallback behavior for missing PV, grid, or wallbox state.
 - [x] Add service tests with mocked Home Assistant state.
 
-## P3 - Charge plan, preview, and backup
+## P3 - Guided configuration, charge plan, and backup
 
+- [ ] Replace the single options form with the step menu.
+- [ ] Test each mapped entity and show loaded, missing, stale, or invalid.
+- [ ] Preview raw and normalized values without writing to devices.
+- [ ] Allow JSON save and load on every step, then retest after load.
 - [ ] Add the single vehicle profile and target SOC persistence.
 - [ ] Add modes, always charge, and solar share as entities.
 - [ ] Add departure, weekly schedule, and late-charging window.
@@ -56,7 +61,8 @@ Backup format: [BACKUP.md](BACKUP.md).
 
 - [ ] Add custom panel WebSocket commands.
 - [ ] Build the phone and desktop energy-flow and two-day forecast view.
-- [ ] Add plan editing and backup download/upload in the panel.
+- [ ] Move the step menu, preview, and JSON actions into the panel.
+- [ ] Add plan editing in the panel.
 - [ ] Verify the main column at 360 pixels in light and dark theme.
 
 ## Backlog
