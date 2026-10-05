@@ -76,7 +76,11 @@ def import_document(payload: dict[str, Any]) -> ImportResult:
     raw = {key: value for key, value in payload.items() if key not in SECRET_KEYS}
     incoming = raw.get("settings") or {}
     warnings = [
-        f"Feld {key} fehlte und nutzt den Standard." for key in default_settings() if key not in incoming
+        f"Feld {key} fehlte und nutzt den Standard."
+        for key in default_settings()
+        if key not in incoming
     ]
     migrated = migrate(raw)
-    return ImportResult(settings=migrated["settings"], step=migrated["step"], warnings=warnings)
+    return ImportResult(
+        settings=migrated["settings"], step=migrated["step"], warnings=warnings
+    )
