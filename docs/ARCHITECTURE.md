@@ -23,12 +23,16 @@ Home Assistant states
 - `allocation.py`: balance-sheet allocation of PV sources by feed-in tariff.
 - `forecast.py`: learning forecast calibration and corrected power series.
 - `optimizer.py`: charging window selection from forecast slots.
+- `preview.py`: day preview for battery priority, car target, buffer and price.
+- `probe.py`: read-only entity status, raw value and normalized value.
+- `setup_draft.py`: step menu draft, JSON load and continuation rules.
+- `backup.py`: versioned JSON export, import, and schema migrations.
+- `storage.py`: persisted vehicle, plan, learning state and backup draft.
 - `coordinator.py`: Home Assistant state gathering, validation, and update orchestration.
 - `wallbox.py`: pure current validation, debounce, minimum-runtime, and fallback decisions.
 - `sensor.py`: first read-only calculated sensors from coordinator state.
 - platform files: future binary sensors, numbers, selects, switches, and buttons.
 - `websocket.py`: future bridge for the custom frontend panel.
-- `backup.py`: versioned JSON export, import, and schema migrations.
 
 ## Runtime model
 

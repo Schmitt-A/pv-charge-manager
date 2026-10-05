@@ -4,21 +4,23 @@ Stand: 2026-10-05. Dieser Plan beschreibt die nächsten Codeänderungen. Der fac
 
 Jeder Schritt ist ein eigener Commit, bleibt ohne Home Assistant lauffähig testbar, und ändert die Wallbox-Entscheidung erst, wenn die neuen Sensoren stimmen.
 
+Schritte 1 bis 4 sind umgesetzt. Der nächste Schritt ist 5: der Coordinator liest die Prognose und ruft `preview.py` auf. Der Wallbox-Sollwert bleibt dabei unverändert.
+
 ## Ist-Stand
 
 Bereits verdrahtet:
 
-- [config_flow.py](../custom_components/pv_charge_manager/config_flow.py) legt nur den Namen an. Die Optionen sind ein einziges Formular ohne Vorschau und ohne JSON.
-- [coordinator.py](../custom_components/pv_charge_manager/coordinator.py) liest PV, Hauslast, Batterieladeleistung und Wallbox. Er rechnet Überschuss, Strom, Leistung und Opportunitätskosten. Die Wallbox wird nur bei `wallbox_control_enabled` geschrieben.
+- [config_flow.py](../custom_components/pv_charge_manager/config_flow.py) legt nur den Namen an. Die Optionen laufen in den Schritten `site`, `pv`, `battery`, `forecast`, `wallbox`, `vehicle` und `review`. Jeder Schritt prüft die zugeordneten Entitäten, zeigt Rohwert und normalisierten Wert und kann JSON laden oder speichern. Die Prüfung schreibt nicht an Wallbox oder Wechselrichter.
+- [coordinator.py](../custom_components/pv_charge_manager/coordinator.py) liest PV, Hauslast, Batterieladeleistung und Wallbox. Er rechnet Überschuss, Strom, Leistung und Opportunitätskosten. Die Wallbox wird nur bei `wallbox_control_enabled` geschrieben. Der Sollwert bleibt `recommended_current_a`.
 - [sensor.py](../custom_components/pv_charge_manager/sensor.py) veröffentlicht fünf Sensoren.
-- [calculation.py](../custom_components/pv_charge_manager/calculation.py), [forecast.py](../custom_components/pv_charge_manager/forecast.py), [optimizer.py](../custom_components/pv_charge_manager/optimizer.py) und [wallbox.py](../custom_components/pv_charge_manager/wallbox.py) sind reine Module mit Tests.
+- [calculation.py](../custom_components/pv_charge_manager/calculation.py), [forecast.py](../custom_components/pv_charge_manager/forecast.py), [optimizer.py](../custom_components/pv_charge_manager/optimizer.py), [preview.py](../custom_components/pv_charge_manager/preview.py), [backup.py](../custom_components/pv_charge_manager/backup.py), [probe.py](../custom_components/pv_charge_manager/probe.py), [setup_draft.py](../custom_components/pv_charge_manager/setup_draft.py) und [wallbox.py](../custom_components/pv_charge_manager/wallbox.py) sind reine Module mit Tests.
+- [storage.py](../custom_components/pv_charge_manager/storage.py) hält Fahrzeug, Plan, Lernzustand und den Backup-Entwurf unter `pv_charge_manager.{entry_id}`.
+- [__init__.py](../custom_components/pv_charge_manager/__init__.py) lädt den Store vor dem Coordinator und registriert `export_backup`, `import_backup` und `recalculate`. `start_boost` schreibt nur eine Warnung.
 
 Vorhanden, aber nicht angeschlossen:
 
-- `ForecastCalibration` und `build_charge_plan` werden vom Coordinator nicht aufgerufen.
+- `ForecastCalibration` und `build_charge_plan` werden vom Coordinator nicht aufgerufen. `preview.py` ebenfalls nicht.
 - `CONF_FORECAST_SENSORS` und `CONF_BATTERY_SOC_SENSOR` werden gespeichert, aber nicht gelesen.
-- [storage.py](../custom_components/pv_charge_manager/storage.py) definiert `EntityMapping` und `VehicleProfile`, niemand nutzt sie.
-- [services.yaml](../custom_components/pv_charge_manager/services.yaml) nennt `recalculate` und `start_boost`. [__init__.py](../custom_components/pv_charge_manager/__init__.py) registriert keine Dienste.
 - `binary_sensor.py`, `number.py`, `select.py`, `switch.py`, `button.py`, `websocket.py` und `frontend/pv-charge-manager.js` sind leere Platzhalter.
 - Es gibt einen gemeinsamen Einspeisetarif, keine Tarife je PV-Quelle.
 

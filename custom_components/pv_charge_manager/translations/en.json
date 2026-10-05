@@ -18,37 +18,113 @@
     "step": {
       "init": {
         "title": "PV Charge Manager options",
-        "description": "Map the sensors and define the electrical limits used for the calculation.",
+        "description": "Setup continues one step at a time."
+      },
+      "site": {
+        "title": "Site",
+        "description": "Grid and home. The check does not write to the wallbox or inverter.\n\n{probe}\n\nJSON:\n{save_json}",
         "data": {
-          "pv_power_sensors": "PV power sensors",
-          "forecast_sensors": "Solar forecast sensors",
-          "home_consumption_sensor": "Home consumption",
           "grid_import_sensor": "Grid import",
           "grid_export_sensor": "Grid export",
-          "battery_charge_power_sensor": "Battery charge power",
-          "battery_soc_sensor": "Battery state of charge",
+          "home_consumption_sensor": "Home consumption",
           "reserve_power_w": "Safety reserve",
+          "load_json": "Load JSON",
+          "go_back": "Back"
+        }
+      },
+      "pv": {
+        "title": "Photovoltaics",
+        "description": "PV power. The check does not write to devices.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "pv_power_sensors": "PV power sensors",
           "feed_in_tariff_eur_per_kwh": "Feed-in tariff",
-          "voltage_v": "Charging voltage",
-          "min_current_a": "Minimum charging current",
-          "max_current_a": "Maximum charging current",
-          "phases": "Phases",
-          "wallbox_control_enabled": "Enable wallbox control",
+          "load_json": "Load JSON",
+          "go_back": "Back"
+        }
+      },
+      "battery": {
+        "title": "Home battery",
+        "description": "Storage limits. The check does not write to the inverter.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "battery_soc_sensor": "Battery state of charge",
+          "battery_charge_power_sensor": "Battery charge power",
+          "priority_soc": "Priority up to percent",
+          "buffer_soc": "Buffer limit",
+          "reserve_soc": "Minimum reserve",
+          "battery_capacity_kwh": "Capacity",
+          "max_soc": "Maximum percent",
+          "load_json": "Load JSON",
+          "go_back": "Back"
+        }
+      },
+      "forecast": {
+        "title": "Forecast and price",
+        "description": "Strategy and optional series. The check does not write to devices.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "forecast_sensors": "Solar forecast sensors",
+          "price_sensor": "Price",
+          "strategy": "Strategy",
+          "mode": "Mode",
+          "always_charge": "Keep minimum power on",
+          "solar_share": "Solar share",
+          "price_limit_eur": "Price limit",
+          "load_json": "Load JSON",
+          "go_back": "Back"
+        }
+      },
+      "wallbox": {
+        "title": "Wallbox",
+        "description": "Mapping and limits. Control stays off until it is enabled here.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
           "wallbox_charging_switch": "Wallbox charging switch",
           "wallbox_current_number": "Wallbox current number",
           "wallbox_connected_sensor": "Vehicle connected",
           "wallbox_charging_power_sensor": "Wallbox charging power",
           "wallbox_manual_override_sensor": "Manual wallbox override",
+          "voltage_v": "Charging voltage",
+          "min_current_a": "Minimum charging current",
+          "max_current_a": "Maximum charging current",
+          "phases": "Phases",
+          "wallbox_control_enabled": "Enable wallbox control",
           "wallbox_start_delay_s": "Start delay",
           "wallbox_stop_delay_s": "Stop delay",
-          "wallbox_minimum_runtime_s": "Minimum runtime"
+          "wallbox_minimum_runtime_s": "Minimum runtime",
+          "load_json": "Load JSON",
+          "go_back": "Back"
+        }
+      },
+      "vehicle": {
+        "title": "Vehicle",
+        "description": "One car. Without a sensor the state of charge stays an assumption.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "vehicle_soc_sensor": "Vehicle state of charge",
+          "name": "Name",
+          "capacity_kwh": "Capacity",
+          "target_soc_percent": "Target percent",
+          "charging_efficiency": "Efficiency",
+          "maximum_current_a": "Maximum current",
+          "departure": "Departure",
+          "load_json": "Load JSON",
+          "go_back": "Back"
+        }
+      },
+      "review": {
+        "title": "Review and save",
+        "description": "Summary. Nothing is written to the wallbox.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "load_json": "Load JSON",
+          "go_back": "Back"
         }
       }
     },
     "error": {
       "max_current_below_minimum": "Maximum charging current must be at least the minimum charging current.",
       "invalid_phases": "Only 1 or 3 phases are supported.",
-      "wallbox_control_requires_entities": "Wallbox control requires a charging switch, current number, and vehicle connected sensor."
+      "wallbox_control_requires_entities": "Wallbox control requires a charging switch, current number, and vehicle connected sensor.",
+      "required_missing": "A required value is missing or invalid. Stale values do not block the step.",
+      "invalid_backup": "The JSON file could not be read.",
+      "unsupported_schema": "The file was written by a newer version and cannot be loaded here.",
+      "invalid_step": "This step is unknown."
     }
   },
   "entity": {

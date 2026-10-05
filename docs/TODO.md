@@ -31,11 +31,11 @@ Backup format: [BACKUP.md](BACKUP.md).
 
 ## P3 - Guided configuration, charge plan, and backup
 
-- [ ] Replace the single options form with the step menu.
-- [ ] Test each mapped entity and show loaded, missing, stale, or invalid.
-- [ ] Preview raw and normalized values without writing to devices.
-- [ ] Allow JSON save and load on every step, then retest after load.
-- [ ] Add the single vehicle profile and target SOC persistence.
+- [x] Replace the single options form with the step menu.
+- [x] Test each mapped entity and show loaded, missing, stale, or invalid.
+- [x] Preview raw and normalized values without writing to devices.
+- [x] Allow JSON save and load on every step, then retest after load.
+- [x] Add the single vehicle profile and target SOC persistence.
 - [ ] Add modes, always charge, and solar share as entities.
 - [ ] Add departure, weekly schedule, and late-charging window.
 - [ ] Add selectable forecast-only and forecast-plus-price strategies.
@@ -47,7 +47,7 @@ Backup format: [BACKUP.md](BACKUP.md).
 - [ ] Add the minimum-power hint and zero-export diagnostic.
 - [ ] Add efficiency, minimum reserve, night reserve, and feasibility sensors.
 - [ ] Recommend car surplus only above priority SOC and battery support down to the buffer.
-- [ ] Add schema version 1 JSON export and import, with a migration test.
+- [x] Add schema version 1 JSON export and import, with a migration test.
 - [ ] Keep inverter battery modes advisory until version 0.5.
 
 ## P4 - Battery strategy control

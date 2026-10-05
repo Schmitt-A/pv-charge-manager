@@ -18,37 +18,113 @@
     "step": {
       "init": {
         "title": "PV Charge Manager Optionen",
-        "description": "Ordne die Sensoren zu und lege die elektrischen Grenzen für die Berechnung fest.",
+        "description": "Die Einrichtung geht schrittweise weiter."
+      },
+      "site": {
+        "title": "Standort",
+        "description": "Netz und Haus. Die Prüfung schreibt nicht an Wallbox oder Wechselrichter.\n\n{probe}\n\nJSON:\n{save_json}",
         "data": {
-          "pv_power_sensors": "PV-Leistungssensoren",
-          "forecast_sensors": "Solarforecast-Sensoren",
-          "home_consumption_sensor": "Hausverbrauch",
           "grid_import_sensor": "Netzbezug",
           "grid_export_sensor": "Netzeinspeisung",
-          "battery_charge_power_sensor": "Batterie-Ladeleistung",
-          "battery_soc_sensor": "Batterie-Ladezustand",
+          "home_consumption_sensor": "Hausverbrauch",
           "reserve_power_w": "Sicherheitsreserve",
+          "load_json": "JSON laden",
+          "go_back": "Zurück"
+        }
+      },
+      "pv": {
+        "title": "Photovoltaik",
+        "description": "PV-Leistung. Die Prüfung schreibt nicht an Geräte.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "pv_power_sensors": "PV-Leistungssensoren",
           "feed_in_tariff_eur_per_kwh": "Einspeisevergütung",
-          "voltage_v": "Ladespannung",
-          "min_current_a": "Minimaler Ladestrom",
-          "max_current_a": "Maximaler Ladestrom",
-          "phases": "Phasen",
-          "wallbox_control_enabled": "Wallbox-Steuerung aktivieren",
+          "load_json": "JSON laden",
+          "go_back": "Zurück"
+        }
+      },
+      "battery": {
+        "title": "Hausbatterie",
+        "description": "Speichergrenzen. Die Prüfung schreibt nicht an den Wechselrichter.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "battery_soc_sensor": "Batterie-Ladezustand",
+          "battery_charge_power_sensor": "Batterie-Ladeleistung",
+          "priority_soc": "Priorität bis Prozent",
+          "buffer_soc": "Puffergrenze",
+          "reserve_soc": "Mindestreserve",
+          "battery_capacity_kwh": "Kapazität",
+          "max_soc": "Maximales Prozent",
+          "load_json": "JSON laden",
+          "go_back": "Zurück"
+        }
+      },
+      "forecast": {
+        "title": "Prognose und Preis",
+        "description": "Strategie und optionale Reihen. Die Prüfung schreibt nicht an Geräte.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "forecast_sensors": "Solarforecast-Sensoren",
+          "price_sensor": "Preis",
+          "strategy": "Strategie",
+          "mode": "Modus",
+          "always_charge": "Immer mit Mindestleistung laden",
+          "solar_share": "Solaranteil",
+          "price_limit_eur": "Preisgrenze",
+          "load_json": "JSON laden",
+          "go_back": "Zurück"
+        }
+      },
+      "wallbox": {
+        "title": "Wallbox",
+        "description": "Zuordnung und Grenzen. Steuerung bleibt aus, bis sie hier eingeschaltet wird.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
           "wallbox_charging_switch": "Wallbox-Ladeschalter",
           "wallbox_current_number": "Wallbox-Ladestrom",
           "wallbox_connected_sensor": "Fahrzeug verbunden",
           "wallbox_charging_power_sensor": "Wallbox-Ladeleistung",
           "wallbox_manual_override_sensor": "Manuelle Wallbox-Steuerung",
+          "voltage_v": "Ladespannung",
+          "min_current_a": "Minimaler Ladestrom",
+          "max_current_a": "Maximaler Ladestrom",
+          "phases": "Phasen",
+          "wallbox_control_enabled": "Wallbox-Steuerung aktivieren",
           "wallbox_start_delay_s": "Startverzögerung",
           "wallbox_stop_delay_s": "Stoppverzögerung",
-          "wallbox_minimum_runtime_s": "Minimale Laufzeit"
+          "wallbox_minimum_runtime_s": "Minimale Laufzeit",
+          "load_json": "JSON laden",
+          "go_back": "Zurück"
+        }
+      },
+      "vehicle": {
+        "title": "Fahrzeug",
+        "description": "Ein Auto. Ohne Sensor bleibt der Ladezustand eine Annahme.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "vehicle_soc_sensor": "Fahrzeug-Ladezustand",
+          "name": "Name",
+          "capacity_kwh": "Kapazität",
+          "target_soc_percent": "Ziel-Prozent",
+          "charging_efficiency": "Wirkungsgrad",
+          "maximum_current_a": "Maximaler Strom",
+          "departure": "Abfahrt",
+          "load_json": "JSON laden",
+          "go_back": "Zurück"
+        }
+      },
+      "review": {
+        "title": "Prüfen und speichern",
+        "description": "Zusammenfassung. Es wird nichts an die Wallbox geschrieben.\n\n{probe}\n\nJSON:\n{save_json}",
+        "data": {
+          "load_json": "JSON laden",
+          "go_back": "Zurück"
         }
       }
     },
     "error": {
       "max_current_below_minimum": "Der maximale Ladestrom muss mindestens dem minimalen Ladestrom entsprechen.",
       "invalid_phases": "Es sind nur 1 oder 3 Phasen zulässig.",
-      "wallbox_control_requires_entities": "Für die Wallbox-Steuerung müssen Ladeschalter, Ladestrom-Nummer und Fahrzeug-Sensor zugeordnet sein."
+      "wallbox_control_requires_entities": "Für die Wallbox-Steuerung müssen Ladeschalter, Ladestrom-Nummer und Fahrzeug-Sensor zugeordnet sein.",
+      "required_missing": "Eine Pflichtangabe fehlt oder der Wert ist ungültig. Veraltet blockiert nicht.",
+      "invalid_backup": "Die JSON-Datei konnte nicht gelesen werden.",
+      "unsupported_schema": "Die Datei kommt aus einer neueren Version und kann hier nicht geladen werden.",
+      "invalid_step": "Dieser Schritt ist unbekannt."
     }
   },
   "entity": {
