@@ -10,7 +10,7 @@ from typing import Any
 
 from .calculation import ChargeLimits, required_vehicle_energy_kwh
 from .optimizer import ForecastSlot, build_charge_plan
-from .preview import STEP, PreviewConfig, PreviewSlot, simulate_case
+from .preview import CHEAP_EUR, STEP, PreviewConfig, PreviewSlot, simulate_case
 
 GOOD_FACTOR = 1.12
 BAD_FACTOR = 0.78
@@ -109,6 +109,9 @@ def build_day_preview(
     learning: dict[str, Any] | None = None,
     departure: datetime | None = None,
     limits: ChargeLimits | None = None,
+    mode: str = "smart",
+    solar_share: float = 100.0,
+    cheap_eur: float = CHEAP_EUR,
 ) -> dict[str, Any]:
     """Build today and tomorrow from the supplied forecast. No invented curve."""
     if not forecast_w:
@@ -118,6 +121,7 @@ def build_day_preview(
     has_vehicle = (
         vehicle_soc is not None and vehicle_capacity_kwh is not None and target_soc is not None
     )
+    car_enabled, force_max = _mode_flags(mode)
     config = _config(
         battery_soc=battery_soc,
         battery_capacity_kwh=battery_capacity_kwh,
@@ -136,6 +140,10 @@ def build_day_preview(
         always_charge=always_charge,
         use_price=use_price and has_vehicle,
         departure=departure,
+        solar_share=solar_share,
+        cheap_eur=cheap_eur,
+        car_enabled=car_enabled,
+        force_max=force_max and has_vehicle,
     )
     nominal = simulate_case(slots, config, factor)
     good = simulate_case(slots, config, factor * GOOD_FACTOR)
@@ -186,6 +194,10 @@ def _plan_status(
     always_charge: bool,
     departure: datetime | None,
 ) -> str:
+    if not config.car_enabled:
+        return "off"
+    if config.force_max:
+        return "needs_grid"
     if limits is None:
         case = simulate_case(slots, config, factor)
         if case.vehicle_missing_kwh <= 0.05 and case.grid_kwh <= 0.05:
@@ -205,6 +217,15 @@ def _plan_status(
     if use_price or always_charge:
         return "needs_grid"
     return "infeasible"
+
+
+def _mode_flags(mode: str) -> tuple[bool, bool]:
+    """Return whether the car may charge, and whether it takes full power now."""
+    if mode == "off":
+        return False, False
+    if mode == "now":
+        return True, True
+    return True, False
 
 
 def _leftover(

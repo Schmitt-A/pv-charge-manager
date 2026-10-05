@@ -29,11 +29,12 @@ Home Assistant states
 - `setup_draft.py`: step menu draft, JSON load and continuation rules.
 - `backup.py`: versioned JSON export, import, and schema migrations.
 - `storage.py`: persisted vehicle, plan, learning state and backup draft.
+- `controls.py`: stored mode, strategy and plan numbers. They do not write the wallbox.
 - `coordinator.py`: Home Assistant state gathering, validation, and update orchestration.
 - `wallbox.py`: pure current validation, debounce, minimum-runtime, and fallback decisions.
 - `sensor.py`: first read-only calculated sensors from coordinator state.
-- platform files: future binary sensors, numbers, selects, switches, and buttons.
-- `websocket.py`: future bridge for the custom frontend panel.
+- `select.py`, `number.py`, `switch.py`, `button.py`: dashboard inputs stored beside the plan.
+- `binary_sensor.py` and `websocket.py`: still unused.
 
 ## Runtime model
 

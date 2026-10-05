@@ -41,6 +41,10 @@ class PreviewConfig:
     always_charge: bool = False
     use_price: bool = False
     departure: datetime | None = None
+    solar_share: float = 100.0
+    cheap_eur: float = CHEAP_EUR
+    car_enabled: bool = True
+    force_max: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,13 +85,16 @@ def simulate_case(slots: list[PreviewSlot], config: PreviewConfig, factor: float
         if slot.end <= slot.start:
             raise ValueError("slot end must be after slot start")
         surplus_w = max(0.0, slot.pv_w * factor - slot.home_w - config.reserve_power_w)
-        cheap = config.use_price and slot.price_eur <= CHEAP_EUR
+        cheap = config.use_price and slot.price_eur <= config.cheap_eur
+        threshold = config.min_power_w * config.solar_share / 100
         cursor = slot.start
         while cursor < slot.end:
             nxt = min(cursor + STEP, slot.end)
             hours = (nxt - cursor).total_seconds() / 3600
-            car_allowed = config.departure is None or cursor < config.departure
-            if surplus_w >= config.min_power_w:
+            car_allowed = config.car_enabled and (
+                config.departure is None or cursor < config.departure
+            )
+            if surplus_w >= threshold:
                 above_min_hours += hours
             chargeable += (surplus_w / 1000) * hours
 
@@ -109,6 +116,8 @@ def simulate_case(slots: list[PreviewSlot], config: PreviewConfig, factor: float
                 if config.always_charge:
                     desired = max(desired, config.min_power_w)
                 if cheap and stored >= priority - 0.02:
+                    desired = config.max_power_w
+                if config.force_max:
                     desired = config.max_power_w
                 extra = max(0.0, desired - from_surplus)
                 if extra > 0 and battery_charge_w == 0 and stored > buffer + 0.001:

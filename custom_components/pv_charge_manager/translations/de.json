@@ -171,6 +171,53 @@
       "battery_recommendation": {
         "name": "Batterie-Empfehlung"
       }
+    },
+    "select": {
+      "mode": {
+        "name": "Modus",
+        "state": {
+          "off": "Aus",
+          "smart": "Intelligent",
+          "now": "Sofort"
+        }
+      },
+      "strategy": {
+        "name": "Strategie",
+        "state": {
+          "forecast": "Prognose",
+          "forecast_price": "Prognose und Preis"
+        }
+      }
+    },
+    "number": {
+      "solar_share": {
+        "name": "Solaranteil"
+      },
+      "target_soc": {
+        "name": "Ziel-Ladestand"
+      },
+      "priority_soc": {
+        "name": "Prioritäts-Ladestand"
+      },
+      "buffer_soc": {
+        "name": "Puffer"
+      },
+      "reserve_soc": {
+        "name": "Mindestreserve"
+      },
+      "price_limit_eur": {
+        "name": "Preisgrenze"
+      }
+    },
+    "switch": {
+      "always_charge": {
+        "name": "Immer laden"
+      }
+    },
+    "button": {
+      "recalculate": {
+        "name": "Plan neu rechnen"
+      }
     }
   }
 }

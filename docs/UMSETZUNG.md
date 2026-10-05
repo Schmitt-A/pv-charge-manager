@@ -4,7 +4,7 @@ Stand: 2026-10-05. Dieser Plan beschreibt die nächsten Codeänderungen. Der fac
 
 Jeder Schritt ist ein eigener Commit, bleibt ohne Home Assistant lauffähig testbar, und ändert die Wallbox-Entscheidung erst, wenn die neuen Sensoren stimmen.
 
-Schritte 1 bis 5 sind umgesetzt. Der nächste Schritt ist 6: Modus, Strategie und die Zahlen werden Eingabe-Entitäten. Der Wallbox-Sollwert bleibt `recommended_current_a`.
+Schritte 1 bis 6 sind umgesetzt. Der nächste Schritt ist 7: das Panel. Der Wallbox-Sollwert bleibt `recommended_current_a`.
 
 ## Ist-Stand
 
@@ -15,13 +15,14 @@ Bereits verdrahtet:
 - [sensor.py](../custom_components/pv_charge_manager/sensor.py) veröffentlicht Überschuss, Sollwert und die Tagesvorschau.
 - [calculation.py](../custom_components/pv_charge_manager/calculation.py), [forecast.py](../custom_components/pv_charge_manager/forecast.py), [optimizer.py](../custom_components/pv_charge_manager/optimizer.py), [preview.py](../custom_components/pv_charge_manager/preview.py), [backup.py](../custom_components/pv_charge_manager/backup.py), [probe.py](../custom_components/pv_charge_manager/probe.py), [setup_draft.py](../custom_components/pv_charge_manager/setup_draft.py) und [wallbox.py](../custom_components/pv_charge_manager/wallbox.py) sind reine Module mit Tests.
 - [storage.py](../custom_components/pv_charge_manager/storage.py) hält Fahrzeug, Plan, Lernzustand und den Backup-Entwurf unter `pv_charge_manager.{entry_id}`.
+- [controls.py](../custom_components/pv_charge_manager/controls.py) prüft Modus, Strategie, Solaranteil, Ziel, Priorität, Puffer, Mindestreserve, Preisgrenze und Immer laden. Die Werte liegen im Store. `select.py`, `number.py`, `switch.py` und `button.py` speichern sie und rechnen neu. Die Wallbox-Steuerung bleibt in den Optionen. Der Sollwert bleibt `recommended_current_a`. Aus lädt das Auto in der Vorschau nicht. Sofort nimmt die volle Leistung. Der Solaranteil ändert die Mindestleistungs-Schwelle. Die Preisgrenze entscheidet, welche Stunde günstig ist.
 - [__init__.py](../custom_components/pv_charge_manager/__init__.py) lädt den Store vor dem Coordinator und registriert `export_backup`, `import_backup` und `recalculate`. `start_boost` schreibt nur eine Warnung.
 
 Vorhanden, aber nicht angeschlossen:
 
 - `ForecastCalibration` sammelt noch keine neuen Stichproben. Der Coordinator wendet nur einen bereits gespeicherten Faktor an, und erst ab sieben Proben.
 - `preview.py` wird vom Coordinator über `day_preview.py` aufgerufen. Eine unlesbare Prognose erzeugt keine Slots.
-- `binary_sensor.py`, `number.py`, `select.py`, `switch.py`, `button.py`, `websocket.py` und `frontend/pv-charge-manager.js` sind leere Platzhalter.
+- `binary_sensor.py`, `websocket.py` und `frontend/pv-charge-manager.js` sind leere Platzhalter.
 - Es gibt einen gemeinsamen Einspeisetarif, keine Tarife je PV-Quelle.
 
 ## Schritt 1: Vorschau als reines Modul

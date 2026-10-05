@@ -36,9 +36,9 @@ Backup format: [BACKUP.md](BACKUP.md).
 - [x] Preview raw and normalized values without writing to devices.
 - [x] Allow JSON save and load on every step, then retest after load.
 - [x] Add the single vehicle profile and target SOC persistence.
-- [ ] Add modes, always charge, and solar share as entities.
+- [x] Add modes, always charge, and solar share as entities.
 - [ ] Add departure, weekly schedule, and late-charging window.
-- [ ] Add selectable forecast-only and forecast-plus-price strategies.
+- [x] Add selectable forecast-only and forecast-plus-price strategies.
 - [ ] Persist historic forecast-vs-actual observations per PV source.
 - [x] Expose learned correction and the good/bad band.
 - [x] Add today and tomorrow chargeable-energy sensors.

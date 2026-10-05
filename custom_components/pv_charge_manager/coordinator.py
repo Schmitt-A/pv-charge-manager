@@ -411,9 +411,9 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             battery_capacity_kwh=capacity,
             battery_max_charge_w=_optional_float(settings.get("battery_max_charge_w")) or 5000.0,
             battery_efficiency=_optional_float(settings.get("battery_efficiency")) or 0.92,
-            priority_soc=_optional_float(settings.get("priority_soc")) or 70.0,
-            buffer_soc=_optional_float(settings.get("buffer_soc")) or 40.0,
-            max_soc=_optional_float(settings.get("max_soc")) or 100.0,
+            priority_soc=_setting_float(settings, "priority_soc", 70.0),
+            buffer_soc=_setting_float(settings, "buffer_soc", 40.0),
+            max_soc=_setting_float(settings, "max_soc", 100.0),
             reserve_power_w=float(options.get(CONF_RESERVE_POWER_W, DEFAULT_RESERVE_POWER_W)),
             vehicle_soc=vehicle_soc,
             vehicle_capacity_kwh=_vehicle_float(settings, "capacity_kwh"),
@@ -428,6 +428,9 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             learning=learning,
             departure=departure,
             limits=limits,
+            mode=_mode(settings),
+            solar_share=_setting_float(settings, "solar_share", 100.0),
+            cheap_eur=_setting_float(settings, "price_limit_eur", 0.12),
         )
         result.update(preview)
 
@@ -446,6 +449,18 @@ class PVChargeManagerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not entity_id:
             return 0.0
         return _read_power(self.hass, entity_id, warnings)
+
+
+def _mode(settings: dict[str, Any]) -> str:
+    mode = settings.get("mode")
+    if mode in {"off", "smart", "now"}:
+        return str(mode)
+    return "smart"
+
+
+def _setting_float(settings: dict[str, Any], key: str, fallback: float) -> float:
+    value = _optional_float(settings.get(key))
+    return fallback if value is None else value
 
 
 def _stored_state(store: Any) -> tuple[dict[str, Any], dict[str, Any], list[Any]]:
