@@ -39,7 +39,8 @@ Backup format: [BACKUP.md](BACKUP.md).
 - [x] Add modes, always charge, and solar share as entities.
 - [ ] Add departure, weekly schedule, and late-charging window.
 - [x] Add selectable forecast-only and forecast-plus-price strategies.
-- [x] Persist historic forecast-vs-actual observations per PV source.
+- [x] Persist a daily forecast-versus-actual sample for the summed PV power.
+- [ ] Split the learned forecast factor by PV source.
 - [x] Expose learned correction and the good/bad band.
 - [x] Add today and tomorrow chargeable-energy sensors.
 - [x] Add battery and vehicle full times for plan target and theoretical full.
