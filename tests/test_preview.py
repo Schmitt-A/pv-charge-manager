@@ -7,8 +7,16 @@ from custom_components.pv_charge_manager.backup import (
     export_document,
     import_document,
 )
-from custom_components.pv_charge_manager.preview import PreviewConfig, PreviewSlot, simulate_case
-from custom_components.pv_charge_manager.probe import EntitySample, blocks_step, probe_entity
+from custom_components.pv_charge_manager.preview import (
+    PreviewConfig,
+    PreviewSlot,
+    simulate_case,
+)
+from custom_components.pv_charge_manager.probe import (
+    EntitySample,
+    blocks_step,
+    probe_entity,
+)
 
 START = datetime(2026, 10, 6, 4, 0, tzinfo=timezone.utc)
 

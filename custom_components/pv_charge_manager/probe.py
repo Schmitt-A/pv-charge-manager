@@ -46,6 +46,4 @@ def probe_entity(sample: EntitySample, stale_after_s: float = 900) -> ProbeHit:
 
 def blocks_step(hits: list[ProbeHit], required_ids: set[str]) -> bool:
     """A step continues only when every required entity is usable or stale."""
-    return any(
-        hit.entity_id in required_ids and hit.status in {"missing", "invalid"} for hit in hits
-    )
+    return any(hit.entity_id in required_ids and hit.status in {"missing", "invalid"} for hit in hits)
