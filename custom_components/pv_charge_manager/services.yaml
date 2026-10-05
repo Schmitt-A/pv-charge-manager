@@ -1,11 +1,46 @@
+export_backup:
+  name: Export backup
+  description: Return the versioned JSON backup. Secrets and live measurements are not included.
+  fields:
+    entry_id:
+      name: Config entry
+      description: Optional config entry id. Needed only when more than one entry exists.
+      required: false
+      selector:
+        text:
+
+import_backup:
+  name: Import backup
+  description: Replace the stored draft with a versioned JSON document, then recalculate.
+  fields:
+    json:
+      name: JSON
+      description: Backup document as JSON text.
+      required: true
+      selector:
+        text:
+          multiline: true
+    entry_id:
+      name: Config entry
+      description: Optional config entry id. Needed only when more than one entry exists.
+      required: false
+      selector:
+        text:
+
 recalculate:
   name: Recalculate charge plan
   description: Recalculate the PV charge plan from the latest available states.
-  fields: {}
+  fields:
+    entry_id:
+      name: Config entry
+      description: Optional config entry id. Needed only when more than one entry exists.
+      required: false
+      selector:
+        text:
 
 start_boost:
   name: Start boost charging
-  description: Reserved for a future manually requested boost mode; automatic wallbox control is handled by the configured safety controller.
+  description: Reserved for a future manually requested boost mode. This service currently only writes a warning and does not change the wallbox.
   fields:
     duration_minutes:
       name: Duration
@@ -16,3 +51,9 @@ start_boost:
           min: 5
           max: 240
           unit_of_measurement: min
+    entry_id:
+      name: Config entry
+      description: Optional config entry id. Needed only when more than one entry exists.
+      required: false
+      selector:
+        text:

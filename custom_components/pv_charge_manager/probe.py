@@ -19,6 +19,7 @@ class EntitySample:
     required: bool
     raw: str
     normalized: str
+    kind: str = "number"
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +38,8 @@ def probe_entity(sample: EntitySample, stale_after_s: float = 900) -> ProbeHit:
         status = "missing" if sample.required else "optional_empty"
     elif sample.age_s is not None and sample.age_s > stale_after_s:
         status = "stale"
+    elif sample.kind == "binary":
+        status = "loaded" if sample.state in {"on", "off"} else "invalid"
     elif not sample.numeric:
         status = "invalid"
     else:
@@ -47,6 +50,5 @@ def probe_entity(sample: EntitySample, stale_after_s: float = 900) -> ProbeHit:
 def blocks_step(hits: list[ProbeHit], required_ids: set[str]) -> bool:
     """A step continues only when every required entity is usable or stale."""
     return any(
-        hit.entity_id in required_ids and hit.status in {"missing", "invalid"}
-        for hit in hits
+        hit.entity_id in required_ids and hit.status in {"missing", "invalid"} for hit in hits
     )
