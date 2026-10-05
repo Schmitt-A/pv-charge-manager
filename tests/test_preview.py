@@ -1,6 +1,6 @@
 """Tests for the pure preview, backup and probe modules."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from custom_components.pv_charge_manager.backup import (
     UnsupportedSchema,
@@ -18,7 +18,7 @@ from custom_components.pv_charge_manager.probe import (
     probe_entity,
 )
 
-START = datetime(2026, 10, 6, 4, 0, tzinfo=timezone.utc)
+START = datetime(2026, 10, 6, 4, 0, tzinfo=UTC)
 
 
 def _slot(hour: int, pv: float, price: float = 0.3) -> PreviewSlot:
@@ -132,9 +132,7 @@ def test_price_adds_grid_energy_before_departure() -> None:
 def test_backup_roundtrip_and_future_schema() -> None:
     document = export_document({"mode": "off", "token": "hidden"}, "pv")
     assert "token" not in document["settings"]
-    loaded = import_document(
-        {"schema_version": 1, "settings": {"mode": "off"}, "step": "pv"}
-    )
+    loaded = import_document({"schema_version": 1, "settings": {"mode": "off"}, "step": "pv"})
     assert loaded.settings["mode"] == "off"
     assert loaded.step == "pv"
     assert loaded.warnings
@@ -147,17 +145,11 @@ def test_backup_roundtrip_and_future_schema() -> None:
 
 def test_probe_statuses_block_only_required_failures() -> None:
     missing = probe_entity(
-        EntitySample(
-            "sensor.pv", False, None, None, False, True, "kein Wert", "kein Wert"
-        )
+        EntitySample("sensor.pv", False, None, None, False, True, "kein Wert", "kein Wert")
     )
-    stale = probe_entity(
-        EntitySample("sensor.haus", True, "1", 2000, True, True, "1", "1")
-    )
+    stale = probe_entity(EntitySample("sensor.haus", True, "1", 2000, True, True, "1", "1"))
     empty = probe_entity(
-        EntitySample(
-            "sensor.preis", False, None, None, False, False, "kein Wert", "kein Wert"
-        )
+        EntitySample("sensor.preis", False, None, None, False, False, "kein Wert", "kein Wert")
     )
     assert missing.status == "missing"
     assert stale.status == "stale"

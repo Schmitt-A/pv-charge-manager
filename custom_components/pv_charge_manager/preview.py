@@ -61,9 +61,7 @@ class PreviewCase:
     minimum_power: str
 
 
-def simulate_case(
-    slots: list[PreviewSlot], config: PreviewConfig, factor: float
-) -> PreviewCase:
+def simulate_case(slots: list[PreviewSlot], config: PreviewConfig, factor: float) -> PreviewCase:
     """Fill the battery to the priority first, then the vehicle."""
     stored = _kwh(config.battery_soc, config.battery_capacity_kwh)
     priority = _kwh(config.priority_soc, config.battery_capacity_kwh)
@@ -135,8 +133,7 @@ def simulate_case(
             if car_allowed and vehicle < full and vehicle_power_w > 0:
                 vehicle = min(
                     full,
-                    vehicle
-                    + (vehicle_power_w / 1000) * hours * config.vehicle_efficiency,
+                    vehicle + (vehicle_power_w / 1000) * hours * config.vehicle_efficiency,
                 )
                 vehicle_kwh += (vehicle_power_w / 1000) * hours
                 grid_kwh += (from_grid / 1000) * hours
@@ -145,9 +142,7 @@ def simulate_case(
             cursor = nxt
 
     missing = max(0.0, target - vehicle)
-    missing_kwh = (
-        missing / config.vehicle_efficiency if config.vehicle_efficiency else 0.0
-    )
+    missing_kwh = missing / config.vehicle_efficiency if config.vehicle_efficiency else 0.0
     if above_min_hours >= 2:
         minimum = "possible"
     elif above_min_hours > 0:
