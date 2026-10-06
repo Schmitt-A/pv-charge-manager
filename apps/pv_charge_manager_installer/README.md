@@ -11,3 +11,8 @@ updating the app, restart Home Assistant before configuring the integration.
 The app requires Home Assistant OS because Home Assistant apps are only
 available with that installation method. HACS remains the preferred path for
 Home Assistant Container, Core, and supervised installations.
+
+`init: false` stays in `config.yaml`. The base image uses s6-overlay, which
+must be process 1. With the default Docker init the app stops immediately and
+logs `s6-overlay-suexec: fatal: can only run as pid 1`.
+
