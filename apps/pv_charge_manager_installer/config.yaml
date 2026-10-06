@@ -1,5 +1,5 @@
 name: PV Charge Manager integration
-version: "0.2.1"
+version: "0.2.2"
 slug: pv_charge_manager_installer
 description: >-
   Installs the PV Charge Manager custom integration into Home Assistant.
@@ -11,7 +11,7 @@ arch:
 init: false
 homeassistant: "2025.1.0"
 startup: once
-boot: auto
+boot: manual
 stage: experimental
 timeout: 120
 map:

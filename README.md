@@ -54,9 +54,11 @@ installations.
    https://github.com/Schmitt-A/pv-charge-manager
    ```
 
-4. Install `PV Charge Manager integration` and start it once.
-5. Restart Home Assistant.
+4. Install `PV Charge Manager integration` and start it once. It only copies
+   files and then stops. It has no page of its own.
+5. Restart Home Assistant. Not just the app.
 6. Open `Settings -> Devices & services -> Add integration` and select `PV Charge Manager`.
+7. The sidebar entry `PV Charge Manager` appears only after this integration exists.
 7. Open the integration options and map the PV, home-consumption, grid, and
    optional battery sensors.
 
